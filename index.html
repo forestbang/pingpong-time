@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="핑퐁타임">
+  <title>핑퐁타임 🏓</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <!-- Kakao SDK -->
+  <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.6.0/kakao.min.js" crossorigin="anonymous"></script>
+
+  <style>
+    :root {
+      --bg: #0d0d14;
+      --bg2: #15151f;
+      --bg3: #1c1c2a;
+      --card: #1a1a28;
+      --accent: #c8ff00;
+      --accent2: #a0d600;
+      --text: #f0f0ff;
+      --text2: #9090b0;
+      --text3: #5a5a78;
+      --border: #2a2a3f;
+      --red: #ff4d4d;
+      --blue: #4d9fff;
+      --green: #4dff91;
+      --orange: #ffaa4d;
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100vh;
+    }
+
+    /* ───── LOGIN ───── */
+    #loginScreen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 40px 32px;
+      background: var(--bg);
+      position: relative;
+      overflow: hidden;
+    }
+
+    #loginScreen::before {
+      content: '';
+      position: absolute;
+      top: -120px; left: -120px;
+      width: 320px; height: 320px;
+      background: radial-gradient(circle, rgba(200,255,0,0.12), transparent 70%);
+      pointer-events: none;
+    }
+
+    #loginScreen::after {
+      content: '';
+      position: absolute;
+      bottom: -100px; right: -80px;
+      width: 260px; height: 260px;
+      background: radial-gradient(circle, rgba(77,159,255,0.1), transparent 70%);
+      pointer-events: none;
+    }
+
+    .login-ball {
+      font-size: 72px;
+      margin-bottom: 24px;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotate(-5deg); }
+      50% { transform: translateY(-14px) rotate(5deg); }
+    }
+
+    .login-logo {
+      font-size: 38px;
+      font-weight: 900;
+      color: var(--text);
+      letter-spacing: -1.5px;
+      margin-bottom: 8px;
+    }
+
+    .login-logo span { color: var(--accent); }
+
+    .login-sub {
+      font-size: 15px;
+      color: var(--text2);
+      margin-bottom: 56px;
+    }
+
+    .kakao-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 18px;
+      background: #FEE500;
+      color: #191919;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 16px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      box-shadow: 0 0 0 0 rgba(254,229,0,0.4);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .kakao-btn:hover { box-shadow: 0 0 24px rgba(254,229,0,0.35); }
+    .kakao-btn:active { transform: scale(0.97); }
+
+    .kakao-icon { width: 22px; height: 22px; }
+
+    /* ───── MAIN APP ───── */
+    #mainApp { display: none; padding-bottom: 76px; }
+
+    /* Header */
+    .header {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header-logo {
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+    }
+
+    .header-logo span { color: var(--accent); }
+
+    .header-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--accent);
+      cursor: pointer;
+    }
+
+    .header-avatar-text {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #000;
+      font-size: 15px;
+      font-weight: 900;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+    }
+
+    /* Tabs */
+    .tab-content { display: none; padding: 16px; }
+    .tab-content.active { display: block; }
+
+    /* Bottom Nav */
+    .bottom-nav {
+      position: fixed; bottom: 0;
+      left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 480px;
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      display: flex;
+      z-index: 100;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .nav-btn {
+      flex: 1;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 10px 0 12px;
+      border: none; background: none;
+      color: var(--text3);
+      font-size: 10px;
+      font-family: inherit;
+      font-weight: 700;
+      gap: 4px;
+      cursor: pointer;
+      transition: color 0.2s;
+      letter-spacing: 0.3px;
+    }
+
+    .nav-btn .icon { font-size: 22px; }
+    .nav-btn.active { color: var(--accent); }
+
+    /* Section title */
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text3);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin: 20px 0 10px;
+    }
+
+    /* ───── MEETING CARDS ───── */
+    .meeting-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.15s;
+    }
+
+    .meeting-card:active { transform: scale(0.99); }
+    .meeting-card:hover { border-color: var(--text3); }
+
+    .meeting-card-top {
+      display: flex; align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .meeting-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      flex: 1;
+      line-height: 1.3;
+    }
+
+    .type-chip {
+      font-size: 11px; font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 20px;
+      margin-left: 8px;
+      flex-shrink: 0;
+    }
+
+    .chip-regular { background: rgba(77,159,255,0.15); color: var(--blue); border: 1px solid rgba(77,159,255,0.3); }
+    .chip-flash   { background: rgba(255,170,77,0.15);  color: var(--orange); border: 1px solid rgba(255,170,77,0.3); }
+
+    .meeting-meta {
+      display: flex; flex-direction: column;
+      gap: 5px; margin-bottom: 12px;
+    }
+
+    .meta-row {
+      display: flex; align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--text2);
+    }
+
+    .meeting-card-bottom {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .count-text {
+      font-size: 13px; color: var(--text2);
+    }
+
+    .count-text strong { color: var(--accent); font-weight: 700; }
+
+    .attend-btn {
+      padding: 8px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 700;
+      font-family: inherit;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-join    { background: var(--accent); color: #000; }
+    .btn-joined  { background: rgba(255,77,77,0.15); color: var(--red); border: 1px solid rgba(255,77,77,0.3); }
+    .btn-full    { background: var(--bg3); color: var(--text3); cursor: default; }
+    .btn-past    { background: var(--bg3); color: var(--text3); cursor: default; font-size: 12px; }
+
+    /* ───── EMPTY STATE ───── */
+    .empty {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--text2);
+    }
+
+    .empty-icon { font-size: 52px; margin-bottom: 12px; }
+    .empty-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; color: var(--text); }
+    .empty-sub { font-size: 14px; color: var(--text2); }
+
+    /* ───── CREATE FORM ───── */
+    .form-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .form-group { margin-bottom: 16px; }
+
+    .form-label {
+      display: block;
+      font-size: 12px; font-weight: 700;
+      color: var(--text2);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .form-input, .form-select {
+      width: 100%;
+      padding: 13px 14px;
+      background: var(--bg3);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 15px;
+      color: var(--text);
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+      -webkit-appearance: none;
+    }
+
+    .form-input::placeholder { color: var(--text3); }
+
+    .form-input:focus, .form-select:focus {
+      border-color: var(--accent);
+    }
+
+    .form-select option { background: var(--bg3); }
+
+    .type-row { display: flex; gap: 8px; }
+
+    .type-toggle {
+      flex: 1; padding: 13px;
+      background: var(--bg3);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text2);
+      font-size: 14px; font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .type-toggle.on {
+      border-color: var(--accent);
+      background: rgba(200,255,0,0.08);
+      color: var(--accent);
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 16px;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 16px; font-weight: 900;
+      font-family: inherit;
+      cursor: pointer;
+      margin-top: 4px;
+      letter-spacing: -0.3px;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+
+    .submit-btn:active { opacity: 0.85; transform: scale(0.98); }
+
+    /* ───── MEMBERS ───── */
+    .member-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .member-ava {
+      width: 46px; height: 46px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .member-ava-text {
+      width: 46px; height: 46px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #000;
+      font-size: 18px; font-weight: 900;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .member-info { flex: 1; min-width: 0; }
+    .member-name { font-size: 15px; font-weight: 700; }
+    .member-stat { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+    .lvl-chip {
+      font-size: 11px; font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 20px;
+      flex-shrink: 0;
+    }
+
+    .lvl-초급  { background: rgba(77,255,145,0.15);  color: var(--green);  border: 1px solid rgba(77,255,145,0.3); }
+    .lvl-중급  { background: rgba(77,159,255,0.15);  color: var(--blue);   border: 1px solid rgba(77,159,255,0.3); }
+    .lvl-고급  { background: rgba(255,170,77,0.15);  color: var(--orange); border: 1px solid rgba(255,170,77,0.3); }
+    .lvl-선수급 { background: rgba(255,77,77,0.15);   color: var(--red);    border: 1px solid rgba(255,77,77,0.3); }
+
+    /* ───── PROFILE ───── */
+    .profile-hero {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 20px 20px;
+      text-align: center;
+      margin-bottom: 14px;
+    }
+
+    .profile-ava-wrap { position: relative; display: inline-block; margin-bottom: 14px; }
+
+    .profile-ava {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      border: 3px solid var(--accent);
+      object-fit: cover;
+    }
+
+    .profile-ava-text {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #000;
+      font-size: 32px; font-weight: 900;
+      display: flex; align-items: center; justify-content: center;
+      border: 3px solid var(--accent);
+    }
+
+    .profile-name { font-size: 22px; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 8px; }
+
+    .profile-stats {
+      display: flex; gap: 10px;
+      margin-top: 18px;
+    }
+
+    .stat-box {
+      flex: 1;
+      background: var(--bg3);
+      border-radius: var(--radius-sm);
+      padding: 14px 8px;
+      text-align: center;
+    }
+
+    .stat-num { font-size: 24px; font-weight: 900; color: var(--accent); }
+    .stat-lbl { font-size: 11px; color: var(--text2); margin-top: 3px; }
+
+    .level-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 8px; margin-top: 10px;
+    }
+
+    .level-btn {
+      padding: 14px;
+      background: var(--bg3);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text2);
+      font-size: 14px; font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .level-btn.on { border-color: var(--accent); background: rgba(200,255,0,0.08); color: var(--accent); }
+
+    .logout-btn {
+      width: 100%;
+      padding: 15px;
+      margin-top: 10px;
+      background: var(--bg3);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text2);
+      font-size: 15px; font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .logout-btn:hover { border-color: var(--red); color: var(--red); }
+
+    .section-title-card {
+      font-size: 13px; font-weight: 700;
+      color: var(--text2);
+      margin-bottom: 10px;
+    }
+
+    .form-section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 10px;
+    }
+
+    /* ───── MODAL ───── */
+    .modal-bg {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 200;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 0;
+    }
+
+    .modal-bg.open { display: flex; }
+
+    .modal-box {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius) var(--radius) 0 0;
+      padding: 24px;
+      width: 100%;
+      max-width: 480px;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+
+    .modal-handle {
+      width: 40px; height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 0 auto 20px;
+    }
+
+    .modal-title { font-size: 18px; font-weight: 900; margin-bottom: 16px; letter-spacing: -0.3px; }
+
+    .modal-info-block {
+      background: var(--bg3);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+
+    .modal-info-row {
+      font-size: 13px; color: var(--text2);
+      margin-bottom: 6px;
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    .modal-info-row:last-child { margin-bottom: 0; }
+
+    .attendee-row {
+      display: flex; align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .attendee-row:last-child { border-bottom: none; }
+
+    .att-ava {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #000;
+      font-size: 14px; font-weight: 900;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .att-name { font-size: 14px; font-weight: 600; flex: 1; }
+
+    .attendee-label { font-size: 13px; font-weight: 700; color: var(--text2); margin-bottom: 8px; }
+
+    .close-btn {
+      width: 100%;
+      padding: 14px;
+      background: var(--bg3);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text2);
+      font-size: 15px; font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      margin-top: 16px;
+    }
+
+    /* ───── TOAST ───── */
+    .toast {
+      position: fixed;
+      bottom: 90px; left: 50%;
+      transform: translateX(-50%) translateY(16px);
+      background: var(--text);
+      color: var(--bg);
+      padding: 11px 20px;
+      border-radius: 30px;
+      font-size: 14px; font-weight: 700;
+      opacity: 0;
+      transition: all 0.28s;
+      z-index: 500;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ───── DELETE BTN ───── */
+    .delete-btn {
+      padding: 7px 14px;
+      background: rgba(255,77,77,0.1);
+      border: 1px solid rgba(255,77,77,0.3);
+      border-radius: 8px;
+      color: var(--red);
+      font-size: 12px; font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ LOGIN ═══ -->
+<div id="loginScreen">
+  <div class="login-ball">🏓</div>
+  <div class="login-logo">핑퐁<span>타임</span></div>
+  <div class="login-sub">탁구 모임 앱</div>
+  <button class="kakao-btn" onclick="kakaoLogin()">
+    <svg class="kakao-icon" viewBox="0 0 24 24" fill="#191919">
+      <path d="M12 3.5C6.753 3.5 2.5 6.92 2.5 11.1c0 2.682 1.743 5.037 4.376 6.448L5.5 21.5l4.553-3.01a11.6 11.6 0 0 0 1.947.16C17.247 18.65 21.5 15.28 21.5 11.1S17.247 3.5 12 3.5z"/>
+    </svg>
+    카카오로 시작하기
+  </button>
+</div>
+
+<!-- ═══ MAIN APP ═══ -->
+<div id="mainApp">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-logo">핑퐁<span>타임</span></div>
+    <div id="headerAva"></div>
+  </div>
+
+  <!-- Tab: 모임 -->
+  <div class="tab-content active" id="tab-home">
+    <div id="upcomingSection"></div>
+    <div id="pastSection"></div>
+  </div>
+
+  <!-- Tab: 모임 만들기 -->
+  <div class="tab-content" id="tab-create">
+    <div class="form-card">
+      <div class="form-group">
+        <div class="form-label">모임 종류</div>
+        <div class="type-row">
+          <button class="type-toggle on" id="toggle-정기" onclick="setType('정기')">📅 정기모임</button>
+          <button class="type-toggle"    id="toggle-번개" onclick="setType('번개')">⚡ 번개모임</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="form-label">모임 제목</div>
+        <input class="form-input" id="f-title" placeholder="예) 토요일 오후 탁구" maxlength="30">
+      </div>
+      <div class="form-group">
+        <div class="form-label">날짜</div>
+        <input class="form-input" id="f-date" type="date">
+      </div>
+      <div class="form-group">
+        <div class="form-label">시간</div>
+        <input class="form-input" id="f-time" type="time">
+      </div>
+      <div class="form-group">
+        <div class="form-label">장소</div>
+        <input class="form-input" id="f-location" placeholder="예) 수원탁구클럽 2층">
+      </div>
+      <div class="form-group">
+        <div class="form-label">최대 인원</div>
+        <select class="form-select" id="f-max">
+          <option value="4">4명</option>
+          <option value="6">6명</option>
+          <option value="8">8명</option>
+          <option value="10" selected>10명</option>
+          <option value="15">15명</option>
+          <option value="20">20명</option>
+          <option value="30">30명</option>
+          <option value="99">제한 없음</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <div class="form-label">메모 (선택)</div>
+        <input class="form-input" id="f-note" placeholder="준비물, 복장, 안내사항 등">
+      </div>
+      <button class="submit-btn" onclick="createMeeting()">모임 만들기 🏓</button>
+    </div>
+  </div>
+
+  <!-- Tab: 멤버 -->
+  <div class="tab-content" id="tab-members">
+    <div id="memberListWrap"></div>
+  </div>
+
+  <!-- Tab: 내 정보 -->
+  <div class="tab-content" id="tab-profile">
+    <div class="profile-hero" id="profileHero"></div>
+
+    <div class="form-section">
+      <div class="section-title-card">내 실력 레벨 설정</div>
+      <div class="level-grid">
+        <button class="level-btn" id="lbtn-초급"  onclick="saveLevel('초급')">🟢 초급</button>
+        <button class="level-btn" id="lbtn-중급"  onclick="saveLevel('중급')">🔵 중급</button>
+        <button class="level-btn" id="lbtn-고급"  onclick="saveLevel('고급')">🟡 고급</button>
+        <button class="level-btn" id="lbtn-선수급" onclick="saveLevel('선수급')">🔴 선수급</button>
+      </div>
+    </div>
+
+    <button class="logout-btn" onclick="doLogout()">로그아웃</button>
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" id="nav-home"    onclick="gotoTab('home',this)">
+      <span class="icon">🏓</span><span>모임</span>
+    </button>
+    <button class="nav-btn" id="nav-create"  onclick="gotoTab('create',this)">
+      <span class="icon">➕</span><span>모임만들기</span>
+    </button>
+    <button class="nav-btn" id="nav-members" onclick="gotoTab('members',this)">
+      <span class="icon">👥</span><span>멤버</span>
+    </button>
+    <button class="nav-btn" id="nav-profile" onclick="gotoTab('profile',this)">
+      <span class="icon">👤</span><span>내 정보</span>
+    </button>
+  </nav>
+</div>
+
+<!-- ═══ MODAL ═══ -->
+<div class="modal-bg" id="modal" onclick="handleModalBgClick(event)">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modalTitle"></div>
+    <div id="modalBody"></div>
+    <button class="close-btn" onclick="closeModal()">닫기</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════
+//  FIREBASE
+// ══════════════════════════════════════
+firebase.initializeApp({
+  apiKey: "AIzaSyDWGrSrq6GjbIOGgBI3jNFI3rbJGUzc7Pw",
+  authDomain: "pleatsme-car.firebaseapp.com",
+  databaseURL: "https://pleatsme-car-default-rtdb.firebaseio.com",
+  projectId: "pleatsme-car",
+  storageBucket: "pleatsme-car.firebasestorage.app",
+  messagingSenderId: "526519414783",
+  appId: "1:526519414783:web:d1b41168e972bdda2941ca"
+});
+const db = firebase.database();
+
+// ══════════════════════════════════════
+//  KAKAO
+// ══════════════════════════════════════
+Kakao.init('800c3d562fbca7e2402c630128ec73b8');
+
+// ══════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════
+let ME = null;            // 로그인한 사용자
+let meetings = {};        // 전체 모임 데이터
+let users = {};           // 전체 멤버 데이터
+let selectedType = '정기'; // 모임 만들기 선택값
+
+// ══════════════════════════════════════
+//  KAKAO LOGIN / LOGOUT
+// ══════════════════════════════════════
+function kakaoLogin() {
+  Kakao.Auth.login({
+    scope: 'profile_nickname,profile_image',
+    success(authObj) {
+      Kakao.API.request({
+        url: '/v2/user/me',
+        success(res) {
+          const id       = String(res.id);
+          const nickname = res.kakao_account?.profile?.nickname || '탁구인';
+          const img      = res.kakao_account?.profile?.profile_image_url || '';
+          ME = { id, nickname, img };
+
+          // Firebase 에 사용자 저장 (첫 로그인이면 신규, 아니면 닉/사진만 업데이트)
+          const ref = db.ref('pingpong/users/' + id);
+          ref.once('value', snap => {
+            const prev = snap.val();
+            if (!prev) {
+              ref.set({ nickname, img, level: '중급', joinedAt: Date.now() });
+              ME.level = '중급';
+            } else {
+              ref.update({ nickname, img });
+              ME.level = prev.level || '중급';
+            }
+            bootApp();
+          });
+        },
+        fail() { toast('사용자 정보를 가져오지 못했어요 😢'); }
+      });
+    },
+    fail() { toast('로그인에 실패했어요. 다시 시도해주세요 😢'); }
+  });
+}
+
+function doLogout() {
+  if (!confirm('로그아웃 하시겠어요?')) return;
+  Kakao.Auth.logout(() => {
+    ME = null;
+    document.getElementById('mainApp').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+  });
+}
+
+// ══════════════════════════════════════
+//  APP BOOT
+// ══════════════════════════════════════
+function bootApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+  renderHeaderAva();
+  setDefaultDate();
+
+  // 실시간 구독
+  db.ref('pingpong/meetings').on('value', snap => {
+    meetings = snap.val() || {};
+    renderMeetings();
+    renderProfile();
+  });
+  db.ref('pingpong/users').on('value', snap => {
+    users = snap.val() || {};
+    renderMembers();
+  });
+}
+
+// ══════════════════════════════════════
+//  HEADER
+// ══════════════════════════════════════
+function renderHeaderAva() {
+  const el = document.getElementById('headerAva');
+  if (ME.img) {
+    el.innerHTML = `<img class="header-avatar" src="${ME.img}" onclick="gotoTab('profile', document.getElementById('nav-profile'))">`;
+  } else {
+    el.innerHTML = `<div class="header-avatar-text" onclick="gotoTab('profile', document.getElementById('nav-profile'))">${ME.nickname[0]}</div>`;
+  }
+}
+
+// ══════════════════════════════════════
+//  TAB SWITCH
+// ══════════════════════════════════════
+function gotoTab(tab, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  btn.classList.add('active');
+  if (tab === 'profile') renderProfile();
+}
+
+// ══════════════════════════════════════
+//  MEETINGS
+// ══════════════════════════════════════
+function renderMeetings() {
+  const now = new Date();
+  const upcoming = [], past = [];
+
+  Object.entries(meetings).forEach(([id, m]) => {
+    const dt = new Date(m.date + 'T' + (m.time || '00:00'));
+    (dt >= now ? upcoming : past).push({ id, ...m });
+  });
+
+  upcoming.sort((a, b) => (a.date + a.time) < (b.date + b.time) ? -1 : 1);
+  past.sort((a, b)     => (a.date + a.time) < (b.date + b.time) ? 1 : -1);
+
+  const upEl = document.getElementById('upcomingSection');
+  const psEl = document.getElementById('pastSection');
+
+  if (upcoming.length === 0) {
+    upEl.innerHTML = `
+      <div class="section-label">예정된 모임</div>
+      <div class="empty">
+        <div class="empty-icon">🏓</div>
+        <div class="empty-title">예정된 모임이 없어요</div>
+        <div class="empty-sub">아래 ➕ 버튼으로 모임을 만들어볼까요?</div>
+      </div>`;
+  } else {
+    upEl.innerHTML = `<div class="section-label">예정된 모임 ${upcoming.length}개</div>`
+      + upcoming.map(m => meetingCardHTML(m, false)).join('');
+  }
+
+  psEl.innerHTML = past.length === 0 ? '' :
+    `<div class="section-label">지난 모임</div>` + past.slice(0, 6).map(m => meetingCardHTML(m, true)).join('');
+}
+
+function meetingCardHTML(m, isPast) {
+  const attendees = m.attendees ? Object.keys(m.attendees) : [];
+  const joined    = ME && attendees.includes(ME.id);
+  const maxTxt    = m.maxPlayers >= 99 ? '제한없음' : m.maxPlayers + '명';
+  const isFull    = m.maxPlayers < 99 && attendees.length >= m.maxPlayers;
+
+  const chipClass = m.type === '정기' ? 'chip-regular' : 'chip-flash';
+  const chipLabel = m.type === '정기' ? '📅 정기' : '⚡ 번개';
+
+  let btn = '';
+  if (isPast) {
+    btn = `<button class="attend-btn btn-past">종료</button>`;
+  } else if (joined) {
+    btn = `<button class="attend-btn btn-joined" onclick="toggleAttend(event,'${m.id}')">참석취소</button>`;
+  } else if (isFull) {
+    btn = `<button class="attend-btn btn-full">마감</button>`;
+  } else {
+    btn = `<button class="attend-btn btn-join" onclick="toggleAttend(event,'${m.id}')">참석신청</button>`;
+  }
+
+  const isOwner = ME && m.createdBy === ME.id;
+  const delBtn  = isOwner && !isPast
+    ? `<button class="delete-btn" onclick="deleteMeeting(event,'${m.id}')">삭제</button>`
+    : '';
+
+  return `
+  <div class="meeting-card" onclick="openDetail('${m.id}')">
+    <div class="meeting-card-top">
+      <div class="meeting-title">${m.title}</div>
+      <span class="type-chip ${chipClass}">${chipLabel}</span>
+    </div>
+    <div class="meeting-meta">
+      <div class="meta-row">📅 ${fmtDate(m.date)} ${m.time}</div>
+      <div class="meta-row">📍 ${m.location}</div>
+      ${m.note ? `<div class="meta-row">📝 ${m.note}</div>` : ''}
+    </div>
+    <div class="meeting-card-bottom">
+      <div class="count-text">참석 <strong>${attendees.length}</strong> / ${maxTxt}</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        ${delBtn}
+        ${btn}
+      </div>
+    </div>
+  </div>`;
+}
+
+function fmtDate(d) {
+  const dt = new Date(d + 'T12:00:00');
+  const day = ['일','월','화','수','목','금','토'][dt.getDay()];
+  return `${dt.getMonth()+1}월 ${dt.getDate()}일 (${day})`;
+}
+
+async function toggleAttend(e, mid) {
+  e.stopPropagation();
+  if (!ME) return;
+  const ref = db.ref(`pingpong/meetings/${mid}/attendees/${ME.id}`);
+  const snap = await ref.once('value');
+  if (snap.exists()) {
+    await ref.remove();
+    toast('참석을 취소했어요');
+  } else {
+    const m = meetings[mid];
+    const cnt = m.attendees ? Object.keys(m.attendees).length : 0;
+    if (m.maxPlayers < 99 && cnt >= m.maxPlayers) { toast('정원이 꽉 찼어요 😢'); return; }
+    await ref.set(true);
+    toast('참석 신청 완료! 🏓');
+  }
+}
+
+async function deleteMeeting(e, mid) {
+  e.stopPropagation();
+  if (!confirm('이 모임을 삭제할까요?')) return;
+  await db.ref(`pingpong/meetings/${mid}`).remove();
+  toast('모임을 삭제했어요');
+}
+
+// ══════════════════════════════════════
+//  DETAIL MODAL
+// ══════════════════════════════════════
+function openDetail(mid) {
+  const m = { id: mid, ...meetings[mid] };
+  const attendees = m.attendees ? Object.keys(m.attendees) : [];
+  const maxTxt = m.maxPlayers >= 99 ? '제한없음' : m.maxPlayers + '명';
+
+  document.getElementById('modalTitle').textContent = m.title;
+
+  const attRows = attendees.length === 0
+    ? `<div style="text-align:center;color:var(--text2);font-size:14px;padding:14px 0;">아직 참석자가 없어요</div>`
+    : attendees.map(uid => {
+        const u = users[uid] || { nickname: '탁구인' };
+        return `
+          <div class="attendee-row">
+            <div class="att-ava">${(u.nickname||'?')[0]}</div>
+            <div class="att-name">${u.nickname || '탁구인'}</div>
+            ${u.level ? `<span class="lvl-chip lvl-${u.level}">${u.level}</span>` : ''}
+          </div>`;
+      }).join('');
+
+  document.getElementById('modalBody').innerHTML = `
+    <div class="modal-info-block">
+      <div class="modal-info-row">📅 ${fmtDate(m.date)} ${m.time}</div>
+      <div class="modal-info-row">📍 ${m.location}</div>
+      <div class="modal-info-row">👥 최대 ${maxTxt}</div>
+      ${m.note ? `<div class="modal-info-row">📝 ${m.note}</div>` : ''}
+    </div>
+    <div class="attendee-label">참석자 ${attendees.length}명</div>
+    ${attRows}`;
+
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+function handleModalBgClick(e) { if (e.target === document.getElementById('modal')) closeModal(); }
+
+// ══════════════════════════════════════
+//  CREATE MEETING
+// ══════════════════════════════════════
+function setType(t) {
+  selectedType = t;
+  ['정기','번개'].forEach(v => {
+    document.getElementById('toggle-'+v).className = 'type-toggle' + (v === t ? ' on' : '');
+  });
+}
+
+function createMeeting() {
+  const title    = document.getElementById('f-title').value.trim();
+  const date     = document.getElementById('f-date').value;
+  const time     = document.getElementById('f-time').value;
+  const location = document.getElementById('f-location').value.trim();
+  const maxP     = parseInt(document.getElementById('f-max').value);
+  const note     = document.getElementById('f-note').value.trim();
+
+  if (!title)    { toast('모임 제목을 입력해주세요'); return; }
+  if (!date)     { toast('날짜를 선택해주세요'); return; }
+  if (!time)     { toast('시간을 선택해주세요'); return; }
+  if (!location) { toast('장소를 입력해주세요'); return; }
+
+  const mid = Date.now().toString();
+  db.ref('pingpong/meetings/' + mid).set({
+    title, date, time, location, maxPlayers: maxP, note,
+    type: selectedType,
+    createdBy: ME.id,
+    createdAt: Date.now()
+  }).then(() => {
+    toast('모임이 만들어졌어요! 🎉');
+    ['f-title','f-location','f-note'].forEach(id => document.getElementById(id).value = '');
+    setDefaultDate();
+    gotoTab('home', document.getElementById('nav-home'));
+  }).catch(() => toast('오류가 발생했어요. 다시 시도해주세요'));
+}
+
+function setDefaultDate() {
+  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+}
+
+// ══════════════════════════════════════
+//  MEMBERS
+// ══════════════════════════════════════
+function renderMembers() {
+  const wrap = document.getElementById('memberListWrap');
+  const list = Object.entries(users);
+  if (list.length === 0) {
+    wrap.innerHTML = `<div class="empty"><div class="empty-icon">👥</div><div class="empty-title">아직 멤버가 없어요</div><div class="empty-sub">카카오 로그인하면 자동 등록돼요</div></div>`;
+    return;
+  }
+
+  // 참석 횟수 계산
+  const cnt = {};
+  Object.values(meetings).forEach(m => {
+    if (m.attendees) Object.keys(m.attendees).forEach(uid => { cnt[uid] = (cnt[uid]||0)+1; });
+  });
+
+  list.sort((a,b) => (cnt[b[0]]||0) - (cnt[a[0]]||0));
+
+  wrap.innerHTML = `<div class="section-label">멤버 ${list.length}명</div>`
+    + list.map(([uid, u]) => `
+      <div class="member-card">
+        ${u.img
+          ? `<img class="member-ava" src="${u.img}">`
+          : `<div class="member-ava-text">${(u.nickname||'?')[0]}</div>`}
+        <div class="member-info">
+          <div class="member-name">${u.nickname || '탁구인'}</div>
+          <div class="member-stat">참석 ${cnt[uid]||0}회</div>
+        </div>
+        ${u.level ? `<span class="lvl-chip lvl-${u.level}">${u.level}</span>` : ''}
+      </div>`).join('');
+}
+
+// ══════════════════════════════════════
+//  PROFILE
+// ══════════════════════════════════════
+function renderProfile() {
+  if (!ME) return;
+  db.ref('pingpong/users/' + ME.id).once('value', snap => {
+    const u = snap.val() || {};
+    ME.level = u.level || '중급';
+
+    const avaHTML = ME.img
+      ? `<img class="profile-ava" src="${ME.img}">`
+      : `<div class="profile-ava-text">${ME.nickname[0]}</div>`;
+
+    const myMeetings = Object.values(meetings).filter(m => m.createdBy === ME.id).length;
+    const myAttend   = Object.values(meetings).filter(m => m.attendees && m.attendees[ME.id]).length;
+
+    document.getElementById('profileHero').innerHTML = `
+      <div class="profile-ava-wrap">${avaHTML}</div>
+      <div class="profile-name">${ME.nickname}</div>
+      <span class="lvl-chip lvl-${ME.level}" style="display:inline-block;margin-top:6px;">${ME.level}</span>
+      <div class="profile-stats">
+        <div class="stat-box"><div class="stat-num">${myAttend}</div><div class="stat-lbl">참석한 모임</div></div>
+        <div class="stat-box"><div class="stat-num">${myMeetings}</div><div class="stat-lbl">만든 모임</div></div>
+        <div class="stat-box"><div class="stat-num">${Object.keys(users).length}</div><div class="stat-lbl">전체 멤버</div></div>
+      </div>`;
+
+    // 레벨 버튼 상태
+    ['초급','중급','고급','선수급'].forEach(lv => {
+      const el = document.getElementById('lbtn-'+lv);
+      if (el) el.className = 'level-btn' + (lv === ME.level ? ' on' : '');
+    });
+  });
+}
+
+function saveLevel(lv) {
+  if (!ME) return;
+  db.ref('pingpong/users/' + ME.id + '/level').set(lv).then(() => {
+    ME.level = lv;
+    ['초급','중급','고급','선수급'].forEach(v => {
+      document.getElementById('lbtn-'+v).className = 'level-btn' + (v === lv ? ' on' : '');
+    });
+    toast(`레벨을 "${lv}"로 설정했어요!`);
+    renderProfile();
+  });
+}
+
+// ══════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2600);
+}
+</script>
+</body>
+</html>
