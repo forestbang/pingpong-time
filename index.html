@@ -801,35 +801,28 @@ let selectedType = '정기'; // 모임 만들기 선택값
 //  KAKAO LOGIN / LOGOUT
 // ══════════════════════════════════════
 function kakaoLogin() {
-  Kakao.Auth.login({
-    scope: 'profile_nickname,profile_image',
-    success(authObj) {
-      Kakao.API.request({
-        url: '/v2/user/me',
-        success(res) {
-          const id       = String(res.id);
-          const nickname = res.kakao_account?.profile?.nickname || '탁구인';
-          const img      = res.kakao_account?.profile?.profile_image_url || '';
-          ME = { id, nickname, img };
+  Kakao.Auth.authorize({
+    redirectUri: 'https://forestbang.github.io/pingpong-time/'
+  });
+}
 
-          // Firebase 에 사용자 저장 (첫 로그인이면 신규, 아니면 닉/사진만 업데이트)
-          const ref = db.ref('pingpong/users/' + id);
-          ref.once('value', snap => {
-            const prev = snap.val();
-            if (!prev) {
-              ref.set({ nickname, img, level: '중급', joinedAt: Date.now() });
-              ME.level = '중급';
-            } else {
-              ref.update({ nickname, img });
-              ME.level = prev.level || '중급';
-            }
-            bootApp();
-          });
-        },
-        fail() { toast('사용자 정보를 가져오지 못했어요 😢'); }
-      });
-    },
-    fail() { toast('로그인에 실패했어요. 다시 시도해주세요 😢'); }
+function handleKakaoUser(res) {
+  const id       = String(res.id);
+  const nickname = res.kakao_account?.profile?.nickname || '탁구인';
+  const img      = res.kakao_account?.profile?.profile_image_url || '';
+  ME = { id, nickname, img };
+
+  const ref = db.ref('pingpong/users/' + id);
+  ref.once('value', snap => {
+    const prev = snap.val();
+    if (!prev) {
+      ref.set({ nickname, img, level: '중급', joinedAt: Date.now() });
+      ME.level = '중급';
+    } else {
+      ref.update({ nickname, img });
+      ME.level = prev.level || '중급';
+    }
+    bootApp();
   });
 }
 
@@ -862,6 +855,20 @@ function bootApp() {
     renderMembers();
   });
 }
+
+// 페이지 로드 시 카카오 로그인 상태 자동 확인
+window.addEventListener('DOMContentLoaded', () => {
+  setDefaultDate();
+  Kakao.Auth.getStatusInfo(statusObj => {
+    if (statusObj.status === 'connected') {
+      Kakao.API.request({
+        url: '/v2/user/me',
+        success(res) { handleKakaoUser(res); },
+        fail()       { /* 로그인 화면 유지 */ }
+      });
+    }
+  });
+});
 
 // ══════════════════════════════════════
 //  HEADER
