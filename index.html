@@ -800,8 +800,9 @@ let selectedType = '정기'; // 모임 만들기 선택값
 // ══════════════════════════════════════
 //  KAKAO LOGIN / LOGOUT
 // ══════════════════════════════════════
-const KAKAO_REST_KEY  = '2fe76cdfbb38c61c06dd9354a0445d54';
-const REDIRECT_URI    = 'https://forestbang.github.io/pingpong-time/';
+const KAKAO_REST_KEY    = '2fe76cdfbb38c61c06dd9354a0445d54';
+const KAKAO_SECRET      = 'BceLQwh7XMFw7yifGegD6wz5M7XsBj3G';
+const REDIRECT_URI      = 'https://forestbang.github.io/pingpong-time/';
 
 function kakaoLogin() {
   window.location.href =
@@ -815,10 +816,11 @@ async function handleCode(code) {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
-        grant_type:   'authorization_code',
-        client_id:    KAKAO_REST_KEY,
-        redirect_uri: REDIRECT_URI,
-        code:         code
+        grant_type:    'authorization_code',
+        client_id:     KAKAO_REST_KEY,
+        client_secret: KAKAO_SECRET,
+        redirect_uri:  REDIRECT_URI,
+        code:          code
       })
     });
     const data = await res.json();
