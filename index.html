@@ -1029,14 +1029,16 @@
       </div>
       <div class="form-group">
         <div class="form-label">장소</div>
-        <select class="form-select" id="f-location">
+        <select class="form-select" id="f-location" onchange="toggleCustomLocation(this.value)">
           <option value="">장소를 선택하세요</option>
           <option value="영통복합체육센터">영통복합체육센터</option>
           <option value="망포복합체육센터">망포복합체육센터</option>
           <option value="영흥체육관">영흥체육관</option>
           <option value="매탄다목적체육관">매탄다목적체육관</option>
-          <option value="기타">기타</option>
+          <option value="기타">기타 (직접입력)</option>
         </select>
+        <input class="form-input" id="f-location-custom" placeholder="장소를 직접 입력하세요" maxlength="40"
+          style="display:none; margin-top:8px;">
       </div>
       <div class="form-group">
         <div class="form-label">최대 인원</div>
@@ -1529,15 +1531,15 @@ function createMeeting() {
   const date     = document.getElementById('f-date').value;
   const time     = document.getElementById('f-time').value;
   const endtime  = document.getElementById('f-endtime').value;
-  const location = document.getElementById('f-location').value;
-  const maxP     = parseInt(document.getElementById('f-max').value);
-  const note     = document.getElementById('f-note').value.trim();
+  const locationSelect = document.getElementById('f-location').value;
+  const locationCustom = document.getElementById('f-location-custom').value.trim();
+  const location = locationSelect === '기타' ? locationCustom : locationSelect;
 
   if (!title)    { toast('모임 제목을 입력해주세요'); return; }
   if (!date)     { toast('날짜를 선택해주세요'); return; }
   if (!time)     { toast('시작 시간을 선택해주세요'); return; }
   if (!endtime)  { toast('종료 예상 시간을 선택해주세요'); return; }
-  if (!location) { toast('장소를 선택해주세요'); return; }
+  if (!location) { toast(locationSelect === '기타' ? '장소를 직접 입력해주세요' : '장소를 선택해주세요'); return; }
 
   const mid = Date.now().toString();
   db.ref('pingpong/meetings/' + mid).set({
@@ -1547,7 +1549,8 @@ function createMeeting() {
     createdAt: Date.now()
   }).then(() => {
     toast('약속이 잡혔어요! 🎉');
-    ['f-title','f-note'].forEach(id => document.getElementById(id).value = '');
+    ['f-title','f-note','f-location-custom'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('f-location-custom').style.display = 'none';
     document.getElementById('f-time').value = '';
     document.getElementById('f-endtime').value = '';
     document.getElementById('f-location').value = '';
@@ -1556,7 +1559,16 @@ function createMeeting() {
   }).catch(() => toast('오류가 발생했어요. 다시 시도해주세요'));
 }
 
-function setDefaultDate() {
+function toggleCustomLocation(val) {
+  const custom = document.getElementById('f-location-custom');
+  if (val === '기타') {
+    custom.style.display = 'block';
+    custom.focus();
+  } else {
+    custom.style.display = 'none';
+    custom.value = '';
+  }
+}
   document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
 }
 
