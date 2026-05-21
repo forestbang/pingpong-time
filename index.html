@@ -1244,9 +1244,9 @@ async function handleCode(code) {
     });
     const data = await res.json();
     if (data.access_token) {
-      Kakao.Auth.setAccessToken(data.access_token);
+      sessionStorage.setItem('pp_token', data.access_token);
       window.history.replaceState({}, '', REDIRECT_URI);
-      loadUserAndBoot();
+      await loadUserAndBoot(data.access_token);
     } else {
       alert('로그인 오류: ' + (data.error_description || '다시 시도해주세요'));
     }
@@ -1255,12 +1255,16 @@ async function handleCode(code) {
   }
 }
 
-function loadUserAndBoot() {
-  Kakao.API.request({
-    url: '/v2/user/me',
-    success(res) { handleKakaoUser(res); },
-    fail()       { alert('사용자 정보를 가져오지 못했어요 😢'); }
-  });
+async function loadUserAndBoot(token) {
+  try {
+    const res = await fetch('https://kapi.kakao.com/v2/user/me', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const data = await res.json();
+    handleKakaoUser(data);
+  } catch(e) {
+    alert('사용자 정보를 가져오지 못했어요 😢');
+  }
 }
 
 function handleKakaoUser(res) {
@@ -1285,7 +1289,7 @@ function handleKakaoUser(res) {
 
 function doLogout() {
   if (!confirm('로그아웃 하시겠어요?')) return;
-  Kakao.Auth.setAccessToken(undefined);
+  sessionStorage.removeItem('pp_token');
   ME = null;
   document.getElementById('mainApp').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
@@ -1326,9 +1330,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   // 이미 로그인된 경우 (토큰 보존)
-  const token = Kakao.Auth.getAccessToken();
+  const token = sessionStorage.getItem('pp_token');
   if (token) {
-    loadUserAndBoot();
+    await loadUserAndBoot(token);
   }
 });
 
