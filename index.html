@@ -3,9 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="핑퐁타임">
+  <meta name="theme-color" content="#0d0d14">
   <title>핑퐁타임 🏓</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -944,6 +946,7 @@ function bootApp() {
 
 // 페이지 로드 시 자동 처리
 window.addEventListener('DOMContentLoaded', async () => {
+  setupPWA();
   setDefaultDate();
 
   // 카카오 로그인 후 리다이렉트로 돌아온 경우 (?code=xxx)
@@ -1259,8 +1262,83 @@ function saveLevel(lv) {
 }
 
 // ══════════════════════════════════════
-//  TOAST
+//  PWA 아이콘 & 매니페스트
 // ══════════════════════════════════════
+function setupPWA() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512; canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+
+  // 배경 (둥근 모서리)
+  ctx.fillStyle = '#0d0d14';
+  const r = 90, s = 512;
+  ctx.beginPath();
+  ctx.moveTo(r, 0); ctx.arcTo(s, 0, s, s, r);
+  ctx.arcTo(s, s, 0, s, r); ctx.arcTo(0, s, 0, 0, r);
+  ctx.arcTo(0, 0, s, 0, r); ctx.closePath();
+  ctx.fill();
+
+  // 패들 본체
+  ctx.fillStyle = '#c8ff00';
+  ctx.beginPath();
+  ctx.arc(210, 195, 148, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 패들 안쪽 면
+  ctx.fillStyle = 'rgba(0,0,0,0.13)';
+  ctx.beginPath();
+  ctx.arc(210, 195, 110, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 패들 손잡이
+  ctx.fillStyle = '#c8ff00';
+  ctx.save();
+  ctx.translate(300, 300);
+  ctx.rotate(Math.PI * 0.77);
+  ctx.beginPath();
+  ctx.roundRect(-24, 0, 48, 155, 24);
+  ctx.fill();
+  ctx.restore();
+
+  // 공
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(368, 362, 60, 0, Math.PI * 2);
+  ctx.fill();
+  // 공 광택
+  ctx.fillStyle = 'rgba(200,255,0,0.35)';
+  ctx.beginPath();
+  ctx.arc(352, 344, 22, 0, Math.PI * 2);
+  ctx.fill();
+
+  const iconUrl = canvas.toDataURL('image/png');
+
+  // iOS 아이콘
+  const appleIcon = document.createElement('link');
+  appleIcon.rel = 'apple-touch-icon';
+  appleIcon.href = iconUrl;
+  document.head.appendChild(appleIcon);
+
+  // Android/Chrome PWA 매니페스트
+  const manifest = {
+    name: '핑퐁타임', short_name: '핑퐁타임',
+    description: '탁구 모임 앱',
+    start_url: '/pingpong-time/',
+    scope: '/pingpong-time/',
+    display: 'standalone',
+    orientation: 'portrait',
+    background_color: '#0d0d14',
+    theme_color: '#0d0d14',
+    icons: [{ src: iconUrl, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }]
+  };
+  const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+  const mLink = document.createElement('link');
+  mLink.rel = 'manifest';
+  mLink.href = URL.createObjectURL(blob);
+  document.head.appendChild(mLink);
+}
+
+
 function toast(msg) {
   const el = document.getElementById('toast');
   el.textContent = msg;
