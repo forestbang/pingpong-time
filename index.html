@@ -800,22 +800,46 @@ let selectedType = '정기'; // 모임 만들기 선택값
 // ══════════════════════════════════════
 //  KAKAO LOGIN / LOGOUT
 // ══════════════════════════════════════
+const KAKAO_REST_KEY  = '2fe76cdfbb38c61c06dd9354a0445d54';
+const REDIRECT_URI    = 'https://forestbang.github.io/pingpong-time/';
+
 function kakaoLogin() {
-  if (typeof Kakao === 'undefined') {
-    alert('카카오 SDK 로딩 실패.\n인터넷 연결을 확인해주세요.');
-    return;
-  }
-  if (!Kakao.isInitialized()) {
-    alert('카카오 초기화 실패.\n앱 키를 확인해주세요.');
-    return;
-  }
+  window.location.href =
+    `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_REST_KEY}` +
+    `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code`;
+}
+
+async function handleCode(code) {
   try {
-    Kakao.Auth.authorize({
-      redirectUri: 'https://forestbang.github.io/pingpong-time/'
+    const res = await fetch('https://kauth.kakao.com/oauth/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type:   'authorization_code',
+        client_id:    KAKAO_REST_KEY,
+        redirect_uri: REDIRECT_URI,
+        code:         code
+      })
     });
+    const data = await res.json();
+    if (data.access_token) {
+      Kakao.Auth.setAccessToken(data.access_token);
+      window.history.replaceState({}, '', REDIRECT_URI);
+      loadUserAndBoot();
+    } else {
+      alert('로그인 오류: ' + (data.error_description || '다시 시도해주세요'));
+    }
   } catch(e) {
-    alert('로그인 오류: ' + e.message);
+    alert('네트워크 오류가 발생했어요. 다시 시도해주세요.');
   }
+}
+
+function loadUserAndBoot() {
+  Kakao.API.request({
+    url: '/v2/user/me',
+    success(res) { handleKakaoUser(res); },
+    fail()       { alert('사용자 정보를 가져오지 못했어요 😢'); }
+  });
 }
 
 function handleKakaoUser(res) {
@@ -840,11 +864,10 @@ function handleKakaoUser(res) {
 
 function doLogout() {
   if (!confirm('로그아웃 하시겠어요?')) return;
-  Kakao.Auth.logout(() => {
-    ME = null;
-    document.getElementById('mainApp').style.display = 'none';
-    document.getElementById('loginScreen').style.display = 'flex';
-  });
+  Kakao.Auth.setAccessToken(undefined);
+  ME = null;
+  document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
 }
 
 // ══════════════════════════════════════
@@ -856,7 +879,6 @@ function bootApp() {
   renderHeaderAva();
   setDefaultDate();
 
-  // 실시간 구독
   db.ref('pingpong/meetings').on('value', snap => {
     meetings = snap.val() || {};
     renderMeetings();
@@ -868,18 +890,23 @@ function bootApp() {
   });
 }
 
-// 페이지 로드 시 카카오 로그인 상태 자동 확인
-window.addEventListener('DOMContentLoaded', () => {
+// 페이지 로드 시 자동 처리
+window.addEventListener('DOMContentLoaded', async () => {
   setDefaultDate();
-  Kakao.Auth.getStatusInfo(statusObj => {
-    if (statusObj.status === 'connected') {
-      Kakao.API.request({
-        url: '/v2/user/me',
-        success(res) { handleKakaoUser(res); },
-        fail()       { /* 로그인 화면 유지 */ }
-      });
-    }
-  });
+
+  // 카카오 로그인 후 리다이렉트로 돌아온 경우 (?code=xxx)
+  const urlParams = new URLSearchParams(window.location.search);
+  const code = urlParams.get('code');
+  if (code) {
+    await handleCode(code);
+    return;
+  }
+
+  // 이미 로그인된 경우 (토큰 보존)
+  const token = Kakao.Auth.getAccessToken();
+  if (token) {
+    loadUserAndBoot();
+  }
 });
 
 // ══════════════════════════════════════
