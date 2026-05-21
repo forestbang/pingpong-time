@@ -676,8 +676,8 @@
       <div class="form-group">
         <div class="form-label">모임 종류</div>
         <div class="type-row">
-          <button class="type-toggle on" id="toggle-정기" onclick="setType('정기')">📅 정기모임</button>
-          <button class="type-toggle"    id="toggle-번개" onclick="setType('번개')">⚡ 번개모임</button>
+          <button class="type-toggle on" id="toggle-번개" onclick="setType('번개')">⚡ 번개모임</button>
+          <button class="type-toggle"    id="toggle-정기" onclick="setType('정기')">📅 정기모임</button>
         </div>
       </div>
       <div class="form-group">
@@ -689,12 +689,62 @@
         <input class="form-input" id="f-date" type="date">
       </div>
       <div class="form-group">
-        <div class="form-label">시간</div>
-        <input class="form-input" id="f-time" type="time">
+        <div class="form-label">시작 시간</div>
+        <select class="form-select" id="f-time">
+          <option value="">시간 선택</option>
+          <option>06:00</option><option>06:30</option>
+          <option>07:00</option><option>07:30</option>
+          <option>08:00</option><option>08:30</option>
+          <option>09:00</option><option>09:30</option>
+          <option>10:00</option><option>10:30</option>
+          <option>11:00</option><option>11:30</option>
+          <option>12:00</option><option>12:30</option>
+          <option>13:00</option><option>13:30</option>
+          <option>14:00</option><option>14:30</option>
+          <option>15:00</option><option>15:30</option>
+          <option>16:00</option><option>16:30</option>
+          <option>17:00</option><option>17:30</option>
+          <option>18:00</option><option>18:30</option>
+          <option>19:00</option><option>19:30</option>
+          <option>20:00</option><option>20:30</option>
+          <option>21:00</option><option>21:30</option>
+          <option>22:00</option><option>22:30</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <div class="form-label">종료 예상 시간</div>
+        <select class="form-select" id="f-endtime">
+          <option value="">시간 선택</option>
+          <option>06:00</option><option>06:30</option>
+          <option>07:00</option><option>07:30</option>
+          <option>08:00</option><option>08:30</option>
+          <option>09:00</option><option>09:30</option>
+          <option>10:00</option><option>10:30</option>
+          <option>11:00</option><option>11:30</option>
+          <option>12:00</option><option>12:30</option>
+          <option>13:00</option><option>13:30</option>
+          <option>14:00</option><option>14:30</option>
+          <option>15:00</option><option>15:30</option>
+          <option>16:00</option><option>16:30</option>
+          <option>17:00</option><option>17:30</option>
+          <option>18:00</option><option>18:30</option>
+          <option>19:00</option><option>19:30</option>
+          <option>20:00</option><option>20:30</option>
+          <option>21:00</option><option>21:30</option>
+          <option>22:00</option><option>22:30</option>
+          <option>23:00</option><option>23:30</option>
+        </select>
       </div>
       <div class="form-group">
         <div class="form-label">장소</div>
-        <input class="form-input" id="f-location" placeholder="예) 수원탁구클럽 2층">
+        <select class="form-select" id="f-location">
+          <option value="">장소를 선택하세요</option>
+          <option value="영통복합체육센터">영통복합체육센터</option>
+          <option value="망포복합체육센터">망포복합체육센터</option>
+          <option value="영흥체육관">영흥체육관</option>
+          <option value="매탄다목적체육관">매탄다목적체육관</option>
+          <option value="기타">기타</option>
+        </select>
       </div>
       <div class="form-group">
         <div class="form-label">최대 인원</div>
@@ -745,7 +795,7 @@
       <span class="icon">🏓</span><span>모임</span>
     </button>
     <button class="nav-btn" id="nav-create"  onclick="gotoTab('create',this)">
-      <span class="icon">➕</span><span>모임만들기</span>
+      <span class="icon">➕</span><span>약속잡기</span>
     </button>
     <button class="nav-btn" id="nav-members" onclick="gotoTab('members',this)">
       <span class="icon">👥</span><span>멤버</span>
@@ -795,7 +845,7 @@ Kakao.init('800c3d562fbca7e2402c630128ec73b8');
 let ME = null;            // 로그인한 사용자
 let meetings = {};        // 전체 모임 데이터
 let users = {};           // 전체 멤버 데이터
-let selectedType = '정기'; // 모임 만들기 선택값
+let selectedType = '번개'; // 모임 만들기 선택값
 
 // ══════════════════════════════════════
 //  KAKAO LOGIN / LOGOUT
@@ -1001,7 +1051,7 @@ function meetingCardHTML(m, isPast) {
       <span class="type-chip ${chipClass}">${chipLabel}</span>
     </div>
     <div class="meeting-meta">
-      <div class="meta-row">📅 ${fmtDate(m.date)} ${m.time}</div>
+      <div class="meta-row">📅 ${fmtDate(m.date)} ${m.time}${m.endtime ? ' ~ ' + m.endtime : ''}</div>
       <div class="meta-row">📍 ${m.location}</div>
       ${m.note ? `<div class="meta-row">📝 ${m.note}</div>` : ''}
     </div>
@@ -1069,7 +1119,7 @@ function openDetail(mid) {
 
   document.getElementById('modalBody').innerHTML = `
     <div class="modal-info-block">
-      <div class="modal-info-row">📅 ${fmtDate(m.date)} ${m.time}</div>
+      <div class="modal-info-row">📅 ${fmtDate(m.date)} ${m.time}${m.endtime ? ' ~ ' + m.endtime : ''}</div>
       <div class="modal-info-row">📍 ${m.location}</div>
       <div class="modal-info-row">👥 최대 ${maxTxt}</div>
       ${m.note ? `<div class="modal-info-row">📝 ${m.note}</div>` : ''}
@@ -1097,24 +1147,29 @@ function createMeeting() {
   const title    = document.getElementById('f-title').value.trim();
   const date     = document.getElementById('f-date').value;
   const time     = document.getElementById('f-time').value;
-  const location = document.getElementById('f-location').value.trim();
+  const endtime  = document.getElementById('f-endtime').value;
+  const location = document.getElementById('f-location').value;
   const maxP     = parseInt(document.getElementById('f-max').value);
   const note     = document.getElementById('f-note').value.trim();
 
   if (!title)    { toast('모임 제목을 입력해주세요'); return; }
   if (!date)     { toast('날짜를 선택해주세요'); return; }
-  if (!time)     { toast('시간을 선택해주세요'); return; }
-  if (!location) { toast('장소를 입력해주세요'); return; }
+  if (!time)     { toast('시작 시간을 선택해주세요'); return; }
+  if (!endtime)  { toast('종료 예상 시간을 선택해주세요'); return; }
+  if (!location) { toast('장소를 선택해주세요'); return; }
 
   const mid = Date.now().toString();
   db.ref('pingpong/meetings/' + mid).set({
-    title, date, time, location, maxPlayers: maxP, note,
+    title, date, time, endtime, location, maxPlayers: maxP, note,
     type: selectedType,
     createdBy: ME.id,
     createdAt: Date.now()
   }).then(() => {
-    toast('모임이 만들어졌어요! 🎉');
-    ['f-title','f-location','f-note'].forEach(id => document.getElementById(id).value = '');
+    toast('약속이 잡혔어요! 🎉');
+    ['f-title','f-note'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('f-time').value = '';
+    document.getElementById('f-endtime').value = '';
+    document.getElementById('f-location').value = '';
     setDefaultDate();
     gotoTab('home', document.getElementById('nav-home'));
   }).catch(() => toast('오류가 발생했어요. 다시 시도해주세요'));
