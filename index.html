@@ -630,7 +630,142 @@
 
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-    /* ───── DELETE BTN ───── */
+    /* ───── CHAT ───── */
+    .chat-wrap {
+      display: flex; flex-direction: column;
+      height: calc(100vh - 130px);
+    }
+
+    .chat-messages {
+      flex: 1; overflow-y: auto;
+      padding: 12px 16px;
+      display: flex; flex-direction: column;
+      gap: 10px;
+    }
+
+    .chat-bubble-wrap {
+      display: flex; gap: 8px;
+      align-items: flex-end;
+    }
+
+    .chat-bubble-wrap.me { flex-direction: row-reverse; }
+
+    .bubble-ava {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #000; font-size: 13px; font-weight: 900;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .bubble-ava img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+
+    .bubble-content { max-width: 72%; }
+
+    .bubble-name {
+      font-size: 11px; color: var(--text2);
+      margin-bottom: 3px; font-weight: 600;
+    }
+
+    .chat-bubble-wrap.me .bubble-name { text-align: right; }
+
+    .bubble {
+      padding: 10px 13px;
+      border-radius: 16px;
+      font-size: 14px; line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .bubble-other { background: var(--card); border: 1px solid var(--border); color: var(--text); border-bottom-left-radius: 4px; }
+    .bubble-me    { background: var(--accent); color: #000; border-bottom-right-radius: 4px; }
+
+    .bubble-time {
+      font-size: 10px; color: var(--text3);
+      margin-top: 3px;
+    }
+
+    .chat-bubble-wrap.me .bubble-time { text-align: right; }
+
+    .chat-input-row {
+      display: flex; gap: 8px;
+      padding: 10px 16px 10px;
+      border-top: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    .chat-input {
+      flex: 1; padding: 11px 14px;
+      background: var(--bg3);
+      border: 1.5px solid var(--border);
+      border-radius: 24px;
+      font-size: 14px; color: var(--text);
+      font-family: inherit; outline: none;
+    }
+
+    .chat-input:focus { border-color: var(--accent); }
+
+    .chat-send {
+      padding: 11px 16px;
+      background: var(--accent); color: #000;
+      border: none; border-radius: 24px;
+      font-size: 14px; font-weight: 700;
+      font-family: inherit; cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    /* ───── COMMENTS (in modal) ───── */
+    .comment-section { margin-top: 16px; }
+    .comment-label { font-size: 13px; font-weight: 700; color: var(--text2); margin-bottom: 8px; }
+
+    .comment-item {
+      display: flex; gap: 8px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .comment-item:last-child { border-bottom: none; }
+
+    .cmt-ava {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--accent); color: #000;
+      font-size: 12px; font-weight: 900;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 2px;
+    }
+
+    .cmt-body { flex: 1; }
+    .cmt-name { font-size: 12px; font-weight: 700; color: var(--accent); }
+    .cmt-text { font-size: 13px; color: var(--text); margin-top: 2px; line-height: 1.4; }
+    .cmt-time { font-size: 10px; color: var(--text3); margin-top: 2px; }
+
+    .comment-input-row {
+      display: flex; gap: 8px; margin-top: 10px;
+    }
+
+    .comment-input {
+      flex: 1; padding: 10px 13px;
+      background: var(--bg3);
+      border: 1.5px solid var(--border);
+      border-radius: 24px;
+      font-size: 13px; color: var(--text);
+      font-family: inherit; outline: none;
+    }
+
+    .comment-input:focus { border-color: var(--accent); }
+
+    .comment-send {
+      padding: 10px 14px;
+      background: var(--accent); color: #000;
+      border: none; border-radius: 24px;
+      font-size: 13px; font-weight: 700;
+      font-family: inherit; cursor: pointer;
+    }
+
+    .chat-date-divider {
+      text-align: center; font-size: 11px;
+      color: var(--text3); margin: 6px 0;
+    }
     .delete-btn {
       padding: 7px 14px;
       background: rgba(255,77,77,0.1);
@@ -769,6 +904,23 @@
     </div>
   </div>
 
+  <!-- Tab: 채팅방 -->
+  <div class="tab-content" id="tab-chat">
+    <div class="chat-wrap">
+      <div class="chat-messages" id="globalChatMessages">
+        <div class="empty" style="padding:60px 20px;">
+          <div class="empty-icon">💬</div>
+          <div class="empty-title">채팅방에 오신 걸 환영해요!</div>
+          <div class="empty-sub">동호회 멤버들과 자유롭게 대화하세요</div>
+        </div>
+      </div>
+      <div class="chat-input-row">
+        <input class="chat-input" id="globalChatInput" placeholder="메시지를 입력하세요..." onkeydown="if(event.key==='Enter')sendGlobalChat()">
+        <button class="chat-send" onclick="sendGlobalChat()">전송</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Tab: 멤버 -->
   <div class="tab-content" id="tab-members">
     <div id="memberListWrap"></div>
@@ -799,11 +951,14 @@
     <button class="nav-btn" id="nav-create"  onclick="gotoTab('create',this)">
       <span class="icon">➕</span><span>약속잡기</span>
     </button>
+    <button class="nav-btn" id="nav-chat"    onclick="gotoTab('chat',this)">
+      <span class="icon">💬</span><span>채팅방</span>
+    </button>
     <button class="nav-btn" id="nav-members" onclick="gotoTab('members',this)">
       <span class="icon">👥</span><span>멤버</span>
     </button>
     <button class="nav-btn" id="nav-profile" onclick="gotoTab('profile',this)">
-      <span class="icon">👤</span><span>내 정보</span>
+      <span class="icon">👤</span><span>내정보</span>
     </button>
   </nav>
 </div>
@@ -814,6 +969,7 @@
     <div class="modal-handle"></div>
     <div class="modal-title" id="modalTitle"></div>
     <div id="modalBody"></div>
+    <div id="modalComments"></div>
     <button class="close-btn" onclick="closeModal()">닫기</button>
   </div>
 </div>
@@ -985,6 +1141,7 @@ function gotoTab(tab, btn) {
   document.getElementById('tab-' + tab).classList.add('active');
   btn.classList.add('active');
   if (tab === 'profile') renderProfile();
+  if (tab === 'chat') listenGlobalChat();
 }
 
 // ══════════════════════════════════════
@@ -1130,6 +1287,17 @@ function openDetail(mid) {
     <div class="attendee-label">참석자 ${attendees.length}명</div>
     ${attRows}`;
 
+  document.getElementById('modalComments').innerHTML = `
+    <div class="comment-section">
+      <div class="comment-label">💬 댓글 · 대화</div>
+      <div id="commentsList"></div>
+      <div class="comment-input-row">
+        <input class="comment-input" id="commentInput" placeholder="댓글을 입력하세요..." onkeydown="if(event.key==='Enter')sendComment('${m.id}')">
+        <button class="comment-send" onclick="sendComment('${m.id}')">등록</button>
+      </div>
+    </div>`;
+
+  listenComments(m.id);
   document.getElementById('modal').classList.add('open');
 }
 
@@ -1259,6 +1427,114 @@ function saveLevel(lv) {
     toast(`레벨을 "${lv}"로 설정했어요!`);
     renderProfile();
   });
+}
+
+// ══════════════════════════════════════
+//  GLOBAL CHAT
+// ══════════════════════════════════════
+let chatListener = null;
+
+function listenGlobalChat() {
+  if (chatListener) return;
+  const ref = db.ref('pingpong/chat').limitToLast(80);
+  chatListener = ref.on('value', snap => {
+    const data = snap.val() || {};
+    const msgs = Object.entries(data).sort((a,b) => a[1].at - b[1].at);
+    const el = document.getElementById('globalChatMessages');
+    if (!el) return;
+    if (msgs.length === 0) {
+      el.innerHTML = `<div class="empty" style="padding:60px 20px;">
+        <div class="empty-icon">💬</div>
+        <div class="empty-title">채팅방에 오신 걸 환영해요!</div>
+        <div class="empty-sub">동호회 멤버들과 자유롭게 대화하세요</div>
+      </div>`;
+      return;
+    }
+    let html = ''; let lastDate = '';
+    msgs.forEach(([id, m]) => {
+      const isMe = ME && m.uid === ME.id;
+      const u = users[m.uid] || { nickname: m.name || '탁구인' };
+      const d = new Date(m.at);
+      const dateStr = `${d.getMonth()+1}월 ${d.getDate()}일`;
+      const timeStr = d.toTimeString().slice(0,5);
+      if (dateStr !== lastDate) {
+        html += `<div class="chat-date-divider">── ${dateStr} ──</div>`;
+        lastDate = dateStr;
+      }
+      const avaHTML = (u.img||m.img)
+        ? `<div class="bubble-ava"><img src="${u.img||m.img}"></div>`
+        : `<div class="bubble-ava">${(u.nickname||'?')[0]}</div>`;
+      html += `
+        <div class="chat-bubble-wrap ${isMe?'me':''}">
+          ${isMe?'':avaHTML}
+          <div class="bubble-content">
+            ${isMe?'':` <div class="bubble-name">${u.nickname}</div>`}
+            <div class="bubble ${isMe?'bubble-me':'bubble-other'}">${escHtml(m.text)}</div>
+            <div class="bubble-time">${timeStr}</div>
+          </div>
+          ${isMe?avaHTML:''}
+        </div>`;
+    });
+    el.innerHTML = html;
+    el.scrollTop = el.scrollHeight;
+  });
+}
+
+function sendGlobalChat() {
+  if (!ME) return;
+  const input = document.getElementById('globalChatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  db.ref('pingpong/chat').push({ uid:ME.id, name:ME.nickname, img:ME.img||'', text, at:Date.now() });
+  input.value = '';
+}
+
+// ══════════════════════════════════════
+//  MEETING COMMENTS
+// ══════════════════════════════════════
+let currentCommentMid = null;
+let commentListener   = null;
+
+function listenComments(mid) {
+  if (commentListener && currentCommentMid)
+    db.ref(`pingpong/meetings/${currentCommentMid}/comments`).off('value', commentListener);
+  currentCommentMid = mid;
+  commentListener = db.ref(`pingpong/meetings/${mid}/comments`).on('value', snap => {
+    const data = snap.val() || {};
+    const list = Object.entries(data).sort((a,b) => a[1].at - b[1].at);
+    const el = document.getElementById('commentsList');
+    if (!el) return;
+    if (list.length === 0) {
+      el.innerHTML = `<div style="text-align:center;color:var(--text3);font-size:13px;padding:12px 0;">첫 댓글을 남겨보세요!</div>`;
+      return;
+    }
+    el.innerHTML = list.map(([id, c]) => {
+      const u = users[c.uid] || { nickname: c.name||'탁구인' };
+      const d = new Date(c.at);
+      const ds = `${d.getMonth()+1}/${d.getDate()} ${d.toTimeString().slice(0,5)}`;
+      return `<div class="comment-item">
+        <div class="cmt-ava">${(u.nickname||'?')[0]}</div>
+        <div class="cmt-body">
+          <div class="cmt-name">${u.nickname}</div>
+          <div class="cmt-text">${escHtml(c.text)}</div>
+          <div class="cmt-time">${ds}</div>
+        </div>
+      </div>`;
+    }).join('');
+  });
+}
+
+function sendComment(mid) {
+  if (!ME) return;
+  const input = document.getElementById('commentInput');
+  const text = input.value.trim();
+  if (!text) return;
+  db.ref(`pingpong/meetings/${mid}/comments`).push({ uid:ME.id, name:ME.nickname, text, at:Date.now() });
+  input.value = '';
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 // ══════════════════════════════════════
