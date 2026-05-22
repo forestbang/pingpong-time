@@ -721,10 +721,7 @@
     .comment-item {
       display: flex; gap: 8px;
       padding: 8px 0;
-      border-bottom: 1px solid var(--border);
     }
-
-    .comment-item:last-child { border-bottom: none; }
 
     .cmt-ava {
       width: 28px; height: 28px; border-radius: 50%;
@@ -989,8 +986,7 @@
     .reply-item {
       display: flex; gap: 8px;
       padding: 8px 0 4px;
-      border-left: 2px solid var(--border);
-      padding-left: 10px;
+      margin-left: 36px;
       margin-bottom: 4px;
     }
     .reply-ava {
@@ -2317,8 +2313,11 @@ function listenGlobalChat() {
         return `<button class="reaction-btn${active}" onclick="toggleChatReaction('${id}','${key}')">${icon}${cnt > 0 ? `<span>${cnt}</span>` : ''}</button>`;
       }).join('')}</div>`;
 
+      const isReply = m.text.startsWith('@');
+      const replyIndent = isReply ? (isMe ? 'padding-right:32px;' : 'padding-left:32px;') : '';
+
       html += `
-        <div class="chat-bubble-wrap ${isMe?'me':''}">
+        <div class="chat-bubble-wrap ${isMe?'me':''}" style="${replyIndent}">
           ${isMe?'':avaHTML}
           <div class="bubble-content">
             ${isMe?'':` <div class="bubble-name">${u.nickname}</div>`}
