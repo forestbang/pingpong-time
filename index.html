@@ -1087,13 +1087,39 @@
   <div class="tab-content" id="tab-profile">
     <div class="profile-hero" id="profileHero"></div>
 
+    <!-- 그립 -->
     <div class="form-section">
-      <div class="section-title-card">내 실력 레벨 설정</div>
+      <div class="section-title-card">🏓 그립</div>
       <div class="level-grid">
-        <button class="level-btn" id="lbtn-초급"  onclick="saveLevel('초급')">🟢 초급</button>
-        <button class="level-btn" id="lbtn-중급"  onclick="saveLevel('중급')">🔵 중급</button>
-        <button class="level-btn" id="lbtn-고급"  onclick="saveLevel('고급')">🟡 고급</button>
-        <button class="level-btn" id="lbtn-선수급" onclick="saveLevel('선수급')">🔴 선수급</button>
+        <button class="level-btn" id="gbtn-쉐이크핸드" onclick="saveGrip('쉐이크핸드')">쉐이크핸드</button>
+        <button class="level-btn" id="gbtn-펜홀더"    onclick="saveGrip('펜홀더')">펜홀더</button>
+        <button class="level-btn" id="gbtn-중펜"      onclick="saveGrip('중펜')">중펜</button>
+      </div>
+    </div>
+
+    <!-- 러버 타입 -->
+    <div class="form-section">
+      <div class="section-title-card">🔴 러버 타입</div>
+      <div class="level-grid">
+        <button class="level-btn" id="rbtn-일반"     onclick="saveRubber('일반')">일반</button>
+        <button class="level-btn" id="rbtn-앞면핌플" onclick="saveRubber('앞면핌플')">앞면핌플</button>
+        <button class="level-btn" id="rbtn-뒷면핌플" onclick="saveRubber('뒷면핌플')">뒷면핌플</button>
+      </div>
+    </div>
+
+    <!-- 실력 레벨 -->
+    <div class="form-section">
+      <div class="section-title-card">📊 실력 레벨</div>
+      <div class="level-grid">
+        <button class="level-btn" id="lbtn-초급" onclick="saveLevel('초급')">🟢 초급</button>
+        <button class="level-btn" id="lbtn-8부"  onclick="saveLevel('8부')">8부</button>
+        <button class="level-btn" id="lbtn-7부"  onclick="saveLevel('7부')">7부</button>
+        <button class="level-btn" id="lbtn-6부"  onclick="saveLevel('6부')">6부</button>
+        <button class="level-btn" id="lbtn-5부"  onclick="saveLevel('5부')">5부</button>
+        <button class="level-btn" id="lbtn-4부"  onclick="saveLevel('4부')">4부</button>
+        <button class="level-btn" id="lbtn-3부"  onclick="saveLevel('3부')">3부</button>
+        <button class="level-btn" id="lbtn-2부"  onclick="saveLevel('2부')">2부</button>
+        <button class="level-btn" id="lbtn-1부"  onclick="saveLevel('1부')">1부</button>
       </div>
     </div>
 
@@ -1653,9 +1679,9 @@ function renderMembers() {
           : `<div class="member-ava-text">${(u.nickname||'?')[0]}</div>`}
         <div class="member-info">
           <div class="member-name">${u.nickname || '탁구인'}</div>
-          <div class="member-stat">참석 ${cnt[uid]||0}회</div>
+          <div class="member-stat">참석 ${cnt[uid]||0}회${u.grip ? ' · '+u.grip : ''}${u.rubber ? ' · '+u.rubber : ''}</div>
         </div>
-        ${u.level ? `<span class="lvl-chip lvl-${u.level}">${u.level}</span>` : ''}
+        ${u.level ? `<span class="lvl-chip lvl-${u.level.includes('부')?'중급':u.level}">${u.level}</span>` : ''}
       </div>`).join('');
 }
 
@@ -1666,7 +1692,9 @@ function renderProfile() {
   if (!ME) return;
   db.ref('pingpong/users/' + ME.id).once('value', snap => {
     const u = snap.val() || {};
-    ME.level = u.level || '중급';
+    ME.level  = u.level  || '';
+    ME.grip   = u.grip   || '';
+    ME.rubber = u.rubber || '';
 
     const avaHTML = ME.img
       ? `<img class="profile-ava" src="${ME.img}">`
@@ -1675,21 +1703,59 @@ function renderProfile() {
     const myMeetings = Object.values(meetings).filter(m => m.createdBy === ME.id).length;
     const myAttend   = Object.values(meetings).filter(m => m.attendees && m.attendees[ME.id]).length;
 
+    const tagStyle = 'display:inline-block;margin:3px 3px 0;padding:4px 10px;background:rgba(200,255,0,0.1);border:1px solid rgba(200,255,0,0.3);border-radius:20px;font-size:12px;color:var(--accent);';
+    const tags = [ME.grip, ME.rubber, ME.level].filter(Boolean)
+      .map(t => `<span style="${tagStyle}">${t}</span>`).join('');
+
     document.getElementById('profileHero').innerHTML = `
       <div class="profile-ava-wrap">${avaHTML}</div>
       <div class="profile-name">${ME.nickname}</div>
-      <span class="lvl-chip lvl-${ME.level}" style="display:inline-block;margin-top:6px;">${ME.level}</span>
+      <div style="margin-top:8px;">${tags || '<span style="color:var(--text3);font-size:13px;">아래에서 정보를 설정해주세요</span>'}</div>
       <div class="profile-stats">
         <div class="stat-box"><div class="stat-num">${myAttend}</div><div class="stat-lbl">참석한 모임</div></div>
         <div class="stat-box"><div class="stat-num">${myMeetings}</div><div class="stat-lbl">만든 모임</div></div>
         <div class="stat-box"><div class="stat-num">${Object.keys(users).length}</div><div class="stat-lbl">전체 멤버</div></div>
       </div>`;
 
-    // 레벨 버튼 상태
-    ['초급','중급','고급','선수급'].forEach(lv => {
-      const el = document.getElementById('lbtn-'+lv);
-      if (el) el.className = 'level-btn' + (lv === ME.level ? ' on' : '');
+    // 그립 버튼
+    ['쉐이크핸드','펜홀더','중펜'].forEach(v => {
+      const el = document.getElementById('gbtn-'+v);
+      if (el) el.className = 'level-btn' + (v === ME.grip ? ' on' : '');
     });
+    // 러버 버튼
+    ['일반','앞면핌플','뒷면핌플'].forEach(v => {
+      const el = document.getElementById('rbtn-'+v);
+      if (el) el.className = 'level-btn' + (v === ME.rubber ? ' on' : '');
+    });
+    // 레벨 버튼
+    ['초급','8부','7부','6부','5부','4부','3부','2부','1부'].forEach(v => {
+      const el = document.getElementById('lbtn-'+v);
+      if (el) el.className = 'level-btn' + (v === ME.level ? ' on' : '');
+    });
+  });
+}
+
+function saveGrip(grip) {
+  if (!ME) return;
+  db.ref('pingpong/users/' + ME.id + '/grip').set(grip).then(() => {
+    ME.grip = grip;
+    ['쉐이크핸드','펜홀더','중펜'].forEach(v => {
+      const el = document.getElementById('gbtn-'+v);
+      if (el) el.className = 'level-btn' + (v === grip ? ' on' : '');
+    });
+    toast(`그립: "${grip}" 설정완료!`);
+  });
+}
+
+function saveRubber(rubber) {
+  if (!ME) return;
+  db.ref('pingpong/users/' + ME.id + '/rubber').set(rubber).then(() => {
+    ME.rubber = rubber;
+    ['일반','앞면핌플','뒷면핌플'].forEach(v => {
+      const el = document.getElementById('rbtn-'+v);
+      if (el) el.className = 'level-btn' + (v === rubber ? ' on' : '');
+    });
+    toast(`러버: "${rubber}" 설정완료!`);
   });
 }
 
@@ -1697,10 +1763,11 @@ function saveLevel(lv) {
   if (!ME) return;
   db.ref('pingpong/users/' + ME.id + '/level').set(lv).then(() => {
     ME.level = lv;
-    ['초급','중급','고급','선수급'].forEach(v => {
-      document.getElementById('lbtn-'+v).className = 'level-btn' + (v === lv ? ' on' : '');
+    ['초급','8부','7부','6부','5부','4부','3부','2부','1부'].forEach(v => {
+      const el = document.getElementById('lbtn-'+v);
+      if (el) el.className = 'level-btn' + (v === lv ? ' on' : '');
     });
-    toast(`레벨을 "${lv}"로 설정했어요!`);
+    toast(`레벨: "${lv}" 설정완료!`);
     renderProfile();
   });
 }
