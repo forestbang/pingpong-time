@@ -1125,7 +1125,7 @@
     <div class="form-section">
       <div class="section-title-card">🔴 러버 타입</div>
       <div class="level-grid">
-        <button class="level-btn" id="rbtn-일반"     onclick="saveRubber('일반')">일반</button>
+        <button class="level-btn" id="rbtn-일반러버"  onclick="saveRubber('일반러버')">일반러버</button>
         <button class="level-btn" id="rbtn-앞면핌플" onclick="saveRubber('앞면핌플')">앞면핌플</button>
         <button class="level-btn" id="rbtn-뒷면핌플" onclick="saveRubber('뒷면핌플')">뒷면핌플</button>
       </div>
@@ -1772,7 +1772,7 @@ function renderProfile() {
       if (el) el.className = 'level-btn' + (v === ME.grip ? ' on' : '');
     });
     // 러버 버튼
-    ['일반','앞면핌플','뒷면핌플'].forEach(v => {
+    ['일반러버','앞면핌플','뒷면핌플'].forEach(v => {
       const el = document.getElementById('rbtn-'+v);
       if (el) el.className = 'level-btn' + (v === ME.rubber ? ' on' : '');
     });
@@ -1838,7 +1838,7 @@ function saveRubber(rubber) {
   if (!ME) return;
   db.ref('pingpong/users/' + ME.id + '/rubber').set(rubber).then(() => {
     ME.rubber = rubber;
-    ['일반','앞면핌플','뒷면핌플'].forEach(v => {
+    ['일반러버','앞면핌플','뒷면핌플'].forEach(v => {
       const el = document.getElementById('rbtn-'+v);
       if (el) el.className = 'level-btn' + (v === rubber ? ' on' : '');
     });
