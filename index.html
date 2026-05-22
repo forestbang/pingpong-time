@@ -1584,6 +1584,8 @@ function createMeeting() {
   const locationSelect = document.getElementById('f-location').value;
   const locationCustom = document.getElementById('f-location-custom').value.trim();
   const location = locationSelect === '기타' ? locationCustom : locationSelect;
+  const maxP     = parseInt(document.getElementById('f-max').value);
+  const note     = document.getElementById('f-note').value.trim();
 
   if (!title)    { toast('모임 제목을 입력해주세요'); return; }
   if (!date)     { toast('날짜를 선택해주세요'); return; }
