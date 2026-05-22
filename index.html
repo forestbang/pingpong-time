@@ -957,6 +957,54 @@
       font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer;
     }
 
+    /* ───── REACTIONS & REPLIES ───── */
+    .reaction-bar {
+      display: flex; flex-wrap: wrap; gap: 4px;
+      margin-top: 6px;
+    }
+    .reaction-btn {
+      display: flex; align-items: center; gap: 3px;
+      padding: 3px 8px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 13px; cursor: pointer;
+      font-family: inherit; color: var(--text2);
+      transition: all 0.15s;
+    }
+    .reaction-btn.active {
+      background: rgba(200,255,0,0.12);
+      border-color: rgba(200,255,0,0.4);
+      color: var(--accent);
+    }
+    .reaction-btn span { font-size: 11px; font-weight: 700; }
+    .reply-trigger {
+      background: none; border: none;
+      color: var(--text3); font-size: 11px;
+      font-family: inherit; cursor: pointer;
+      padding: 2px 0; margin-top: 4px;
+    }
+    .reply-trigger:hover { color: var(--accent); }
+    .reply-thread { padding-left: 36px; }
+    .reply-item {
+      display: flex; gap: 8px;
+      padding: 8px 0 4px;
+      border-left: 2px solid var(--border);
+      padding-left: 10px;
+      margin-bottom: 4px;
+    }
+    .reply-ava {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--accent); color: #000;
+      font-size: 10px; font-weight: 900;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 2px;
+    }
+    .chat-reply-bar {
+      display: flex; align-items: center;
+      gap: 6px; padding: 2px 0; margin-top: 4px;
+    }
+
     .admin-badge {
       display: none; font-size: 10px; font-weight: 900;
       background: var(--red); color: #fff;
@@ -973,11 +1021,28 @@
       cursor: pointer;
     }
   </style>
+  <style>
+    #loadingScreen {
+      position: fixed; inset: 0;
+      background: #0d0d14;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 999;
+      flex-direction: column; gap: 16px;
+    }
+    .load-ball { font-size: 52px; animation: float 1.5s ease-in-out infinite; }
+    .load-txt  { font-size: 15px; color: #9090b0; font-family: 'Noto Sans KR', sans-serif; }
+  </style>
 </head>
 <body>
 
+<!-- ═══ LOADING ═══ -->
+<div id="loadingScreen">
+  <div class="load-ball">🏓</div>
+  <div class="load-txt">핑퐁타임 로딩중...</div>
+</div>
+
 <!-- ═══ LOGIN ═══ -->
-<div id="loginScreen">
+<div id="loginScreen" style="display:none;">
   <div class="login-ball">🏓</div>
   <div class="login-logo">핑퐁<span>타임</span></div>
   <div class="login-sub">탁구 모임 앱</div>
@@ -1396,9 +1461,18 @@ async function loadUserAndBoot(token) {
       headers: { 'Authorization': 'Bearer ' + token }
     });
     const data = await res.json();
-    handleKakaoUser(data);
+    if (data.id) {
+      handleKakaoUser(data);
+    } else {
+      // 토큰 만료 → 로그인 화면
+      sessionStorage.removeItem('pp_token');
+      document.getElementById('loadingScreen').style.display = 'none';
+      document.getElementById('loginScreen').style.display = 'flex';
+    }
   } catch(e) {
-    alert('사용자 정보를 가져오지 못했어요 😢');
+    sessionStorage.removeItem('pp_token');
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
   }
 }
 
@@ -1441,6 +1515,7 @@ function doLogout() {
 //  APP BOOT
 // ══════════════════════════════════════
 function bootApp() {
+  document.getElementById('loadingScreen').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('mainApp').style.display = 'block';
   renderHeaderAva();
@@ -1498,6 +1573,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   const token = sessionStorage.getItem('pp_token');
   if (token) {
     await loadUserAndBoot(token);
+  } else {
+    // 로그인 안된 경우 → 로그인 화면
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
   }
 });
 
@@ -2154,6 +2233,48 @@ function adminDeleteChat(id, btn) {
 }
 
 // ══════════════════════════════════════
+//  EMOJI REACTIONS
+// ══════════════════════════════════════
+const EMOJIS = [
+  { key:'like',   icon:'👍' },
+  { key:'heart',  icon:'❤️' },
+  { key:'laugh',  icon:'😂' },
+  { key:'fire',   icon:'🔥' },
+  { key:'clap',   icon:'👏' },
+  { key:'thanks', icon:'🙏' },
+];
+
+function reactionBarHTML(reactions, fnStr) {
+  return `<div class="reaction-bar">${EMOJIS.map(({key,icon}) => {
+    const uids = reactions?.[key] || {};
+    const cnt  = Object.keys(uids).length;
+    const active = ME && uids[ME.id] ? ' active' : '';
+    return `<button class="reaction-btn${active}" onclick="${fnStr}('${key}')">${icon}${cnt > 0 ? `<span>${cnt}</span>` : ''}</button>`;
+  }).join('')}</div>`;
+}
+
+async function toggleChatReaction(msgId, emoji) {
+  if (!ME) return;
+  const ref = db.ref(`pingpong/chat/${msgId}/reactions/${emoji}/${ME.id}`);
+  const snap = await ref.once('value');
+  snap.exists() ? await ref.remove() : await ref.set(true);
+}
+
+async function toggleCommentReaction(mid, cid, emoji) {
+  if (!ME) return;
+  const ref = db.ref(`pingpong/meetings/${mid}/comments/${cid}/reactions/${emoji}/${ME.id}`);
+  const snap = await ref.once('value');
+  snap.exists() ? await ref.remove() : await ref.set(true);
+}
+
+async function toggleReplyReaction(mid, cid, rid, emoji) {
+  if (!ME) return;
+  const ref = db.ref(`pingpong/meetings/${mid}/comments/${cid}/replies/${rid}/reactions/${emoji}/${ME.id}`);
+  const snap = await ref.once('value');
+  snap.exists() ? await ref.remove() : await ref.set(true);
+}
+
+// ══════════════════════════════════════
 //  GLOBAL CHAT
 // ══════════════════════════════════════
 let chatListener = null;
@@ -2188,6 +2309,14 @@ function listenGlobalChat() {
       const avaHTML = (u.img||m.img)
         ? `<div class="bubble-ava"><img src="${u.img||m.img}"></div>`
         : `<div class="bubble-ava">${(u.nickname||'?')[0]}</div>`;
+
+      const rxBar = `<div class="reaction-bar">${EMOJIS.map(({key,icon}) => {
+        const uids = m.reactions?.[key] || {};
+        const cnt  = Object.keys(uids).length;
+        const active = ME && uids[ME.id] ? ' active' : '';
+        return `<button class="reaction-btn${active}" onclick="toggleChatReaction('${id}','${key}')">${icon}${cnt > 0 ? `<span>${cnt}</span>` : ''}</button>`;
+      }).join('')}</div>`;
+
       html += `
         <div class="chat-bubble-wrap ${isMe?'me':''}">
           ${isMe?'':avaHTML}
@@ -2195,6 +2324,10 @@ function listenGlobalChat() {
             ${isMe?'':` <div class="bubble-name">${u.nickname}</div>`}
             <div class="bubble ${isMe?'bubble-me':'bubble-other'}">${escHtml(m.text)}</div>
             <div class="bubble-time">${timeStr}</div>
+            ${rxBar}
+            <div class="chat-reply-bar">
+              <button class="reply-trigger" onclick="chatReply('${escHtml(u.nickname)}')">↩ 답글</button>
+            </div>
           </div>
           ${isMe?avaHTML:''}
         </div>`;
@@ -2202,6 +2335,12 @@ function listenGlobalChat() {
     el.innerHTML = html;
     el.scrollTop = el.scrollHeight;
   });
+}
+
+function chatReply(name) {
+  const input = document.getElementById('globalChatInput');
+  input.value = `@${name} `;
+  input.focus();
 }
 
 function sendGlobalChat() {
@@ -2232,20 +2371,65 @@ function listenComments(mid) {
       el.innerHTML = `<div style="text-align:center;color:var(--text3);font-size:13px;padding:12px 0;">첫 댓글을 남겨보세요!</div>`;
       return;
     }
-    el.innerHTML = list.map(([id, c]) => {
+    el.innerHTML = list.map(([cid, c]) => {
       const u = users[c.uid] || { nickname: c.name||'탁구인' };
       const d = new Date(c.at);
       const ds = `${d.getMonth()+1}/${d.getDate()} ${d.toTimeString().slice(0,5)}`;
+
+      // 이모지 반응
+      const rxBar = `<div class="reaction-bar">${EMOJIS.map(({key,icon}) => {
+        const uids = c.reactions?.[key] || {};
+        const cnt  = Object.keys(uids).length;
+        const active = ME && uids[ME.id] ? ' active' : '';
+        return `<button class="reaction-btn${active}" onclick="toggleCommentReaction('${mid}','${cid}','${key}')">${icon}${cnt > 0 ? `<span>${cnt}</span>` : ''}</button>`;
+      }).join('')}</div>`;
+
+      // 대댓글 목록
+      const replies = c.replies ? Object.entries(c.replies).sort((a,b) => a[1].at - b[1].at) : [];
+      const repliesHTML = replies.map(([rid, r]) => {
+        const ru = users[r.uid] || { nickname: r.name||'탁구인' };
+        const rd = new Date(r.at);
+        const rds = `${rd.getMonth()+1}/${rd.getDate()} ${rd.toTimeString().slice(0,5)}`;
+        const rrxBar = `<div class="reaction-bar">${EMOJIS.map(({key,icon}) => {
+          const uids = r.reactions?.[key] || {};
+          const cnt  = Object.keys(uids).length;
+          const active = ME && uids[ME.id] ? ' active' : '';
+          return `<button class="reaction-btn${active}" onclick="toggleReplyReaction('${mid}','${cid}','${rid}','${key}')">${icon}${cnt > 0 ? `<span>${cnt}</span>` : ''}</button>`;
+        }).join('')}</div>`;
+        return `<div class="reply-item">
+          <div class="reply-ava">${(ru.nickname||'?')[0]}</div>
+          <div class="cmt-body">
+            <div class="cmt-name">${ru.nickname}</div>
+            <div class="cmt-text">${escHtml(r.text)}</div>
+            <div class="cmt-time">${rds}</div>
+            ${rrxBar}
+          </div>
+        </div>`;
+      }).join('');
+
       return `<div class="comment-item">
         <div class="cmt-ava">${(u.nickname||'?')[0]}</div>
         <div class="cmt-body">
           <div class="cmt-name">${u.nickname}</div>
           <div class="cmt-text">${escHtml(c.text)}</div>
           <div class="cmt-time">${ds}</div>
+          ${rxBar}
+          <button class="reply-trigger" onclick="triggerReply('${mid}','${cid}','${escHtml(u.nickname)}')">↩ 답글</button>
         </div>
-      </div>`;
+      </div>
+      ${repliesHTML ? `<div class="reply-thread">${repliesHTML}</div>` : ''}`;
     }).join('');
   });
+}
+
+let replyTarget = null; // { mid, cid, name }
+
+function triggerReply(mid, cid, name) {
+  replyTarget = { mid, cid, name };
+  const input = document.getElementById('commentInput');
+  input.placeholder = `@${name} 에게 답글...`;
+  input.value = '';
+  input.focus();
 }
 
 function sendComment(mid) {
@@ -2253,7 +2437,20 @@ function sendComment(mid) {
   const input = document.getElementById('commentInput');
   const text = input.value.trim();
   if (!text) return;
-  db.ref(`pingpong/meetings/${mid}/comments`).push({ uid:ME.id, name:ME.nickname, text, at:Date.now() });
+
+  if (replyTarget && replyTarget.mid === mid) {
+    // 대댓글 저장
+    db.ref(`pingpong/meetings/${mid}/comments/${replyTarget.cid}/replies`).push({
+      uid: ME.id, name: ME.nickname, text, at: Date.now()
+    });
+    replyTarget = null;
+    input.placeholder = '댓글을 입력하세요...';
+  } else {
+    // 일반 댓글 저장
+    db.ref(`pingpong/meetings/${mid}/comments`).push({
+      uid: ME.id, name: ME.nickname, text, at: Date.now()
+    });
+  }
   input.value = '';
 }
 
