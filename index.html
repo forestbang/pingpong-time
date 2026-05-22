@@ -1087,6 +1087,31 @@
   <div class="tab-content" id="tab-profile">
     <div class="profile-hero" id="profileHero"></div>
 
+    <!-- 닉네임 -->
+    <div class="form-section">
+      <div class="section-title-card">✏️ 닉네임 설정</div>
+      <div style="display:flex;gap:8px;padding-top:4px;">
+        <input class="form-input" id="nicknameInput" placeholder="닉네임을 입력하세요" maxlength="12" style="flex:1;">
+        <button onclick="saveNickname()" style="padding:0 18px;background:var(--accent);color:#000;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;flex-shrink:0;">저장</button>
+      </div>
+    </div>
+
+    <!-- 성별 & 출생년도 -->
+    <div class="form-section">
+      <div class="section-title-card">👤 성별 · 출생년도 (선택)</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <button class="level-btn" id="gbtn-남성" onclick="saveGender('남성')" style="flex:1;">👨 남성</button>
+        <button class="level-btn" id="gbtn-여성" onclick="saveGender('여성')" style="flex:1;">👩 여성</button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <select class="form-select" id="birthYearInput" style="flex:1;">
+          <option value="">출생년도 선택</option>
+          ${Array.from({length:60},(_,i)=>2005-i).map(y=>`<option value="${y}">${y}년생</option>`).join('')}
+        </select>
+        <button onclick="saveBirthYear()" style="padding:13px 18px;background:var(--accent);color:#000;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;flex-shrink:0;">저장</button>
+      </div>
+    </div>
+
     <!-- 그립 -->
     <div class="form-section">
       <div class="section-title-card">🏓 그립</div>
@@ -1692,9 +1717,11 @@ function renderProfile() {
   if (!ME) return;
   db.ref('pingpong/users/' + ME.id).once('value', snap => {
     const u = snap.val() || {};
-    ME.level  = u.level  || '';
-    ME.grip   = u.grip   || '';
-    ME.rubber = u.rubber || '';
+    ME.level     = u.level     || '';
+    ME.grip      = u.grip      || '';
+    ME.rubber    = u.rubber    || '';
+    ME.gender    = u.gender    || '';
+    ME.birthYear = u.birthYear || '';
 
     const avaHTML = ME.img
       ? `<img class="profile-ava" src="${ME.img}">`
@@ -1704,7 +1731,7 @@ function renderProfile() {
     const myAttend   = Object.values(meetings).filter(m => m.attendees && m.attendees[ME.id]).length;
 
     const tagStyle = 'display:inline-block;margin:3px 3px 0;padding:4px 10px;background:rgba(200,255,0,0.1);border:1px solid rgba(200,255,0,0.3);border-radius:20px;font-size:12px;color:var(--accent);';
-    const tags = [ME.grip, ME.rubber, ME.level].filter(Boolean)
+    const tags = [ME.gender, ME.birthYear ? ME.birthYear+'년생' : '', ME.grip, ME.rubber, ME.level].filter(Boolean)
       .map(t => `<span style="${tagStyle}">${t}</span>`).join('');
 
     document.getElementById('profileHero').innerHTML = `
@@ -1716,6 +1743,19 @@ function renderProfile() {
         <div class="stat-box"><div class="stat-num">${myMeetings}</div><div class="stat-lbl">만든 모임</div></div>
         <div class="stat-box"><div class="stat-num">${Object.keys(users).length}</div><div class="stat-lbl">전체 멤버</div></div>
       </div>`;
+
+    // 성별 버튼
+    ['남성','여성'].forEach(v => {
+      const el = document.getElementById('gbtn-'+v);
+      if (el) el.className = 'level-btn' + (v === ME.gender ? ' on' : '');
+    });
+    // 출생년도
+    const byEl = document.getElementById('birthYearInput');
+    if (byEl && ME.birthYear) byEl.value = ME.birthYear;
+
+    // 닉네임 입력란에 현재 닉네임 placeholder
+    const ni = document.getElementById('nicknameInput');
+    if (ni) ni.placeholder = ME.nickname || '닉네임을 입력하세요';
 
     // 그립 버튼
     ['쉐이크핸드','펜홀더','중펜'].forEach(v => {
@@ -1732,6 +1772,44 @@ function renderProfile() {
       const el = document.getElementById('lbtn-'+v);
       if (el) el.className = 'level-btn' + (v === ME.level ? ' on' : '');
     });
+  });
+}
+
+function saveGender(gender) {
+  if (!ME) return;
+  db.ref('pingpong/users/' + ME.id + '/gender').set(gender).then(() => {
+    ME.gender = gender;
+    ['남성','여성'].forEach(v => {
+      const el = document.getElementById('gbtn-'+v);
+      if (el) el.className = 'level-btn' + (v === gender ? ' on' : '');
+    });
+    toast(`성별: "${gender}" 설정완료!`);
+  });
+}
+
+function saveBirthYear() {
+  if (!ME) return;
+  const year = document.getElementById('birthYearInput').value;
+  if (!year) { toast('출생년도를 선택해주세요'); return; }
+  db.ref('pingpong/users/' + ME.id + '/birthYear').set(year).then(() => {
+    ME.birthYear = year;
+    toast(`${year}년생으로 설정됐어요!`);
+    renderProfile();
+  });
+}
+
+function saveNickname() {
+  if (!ME) return;
+  const input = document.getElementById('nicknameInput');
+  const nickname = input.value.trim();
+  if (!nickname) { toast('닉네임을 입력해주세요'); return; }
+  if (nickname.length < 2) { toast('닉네임은 2자 이상이어야 해요'); return; }
+  db.ref('pingpong/users/' + ME.id + '/nickname').set(nickname).then(() => {
+    ME.nickname = nickname;
+    input.value = '';
+    toast('닉네임이 변경됐어요! 😊');
+    renderProfile();
+    renderHeaderAva();
   });
 }
 
