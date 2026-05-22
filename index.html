@@ -2338,6 +2338,12 @@ function listenGlobalChat() {
   });
 }
 
+function deleteReply(mid, cid, rid) {
+  if (!confirm('이 대댓글을 삭제할까요?')) return;
+  db.ref(`pingpong/meetings/${mid}/comments/${cid}/replies/${rid}`).remove()
+    .then(() => toast('대댓글을 삭제했어요'));
+}
+
 function deleteChatMsg(id) {
   if (!confirm('이 메시지를 삭제할까요?')) return;
   db.ref(`pingpong/chat/${id}`).remove().then(() => toast('메시지를 삭제했어요'));
@@ -2407,10 +2413,14 @@ function listenComments(mid) {
           const active = ME && uids[ME.id] ? ' active' : '';
           return `<button class="reaction-btn${active}" onclick="toggleReplyReaction('${mid}','${cid}','${rid}','${key}')">${icon}${cnt > 0 ? `<span>${cnt}</span>` : ''}</button>`;
         }).join('')}</div>`;
+        const isMyReply = ME && r.uid === ME.id;
         return `<div class="reply-item">
           <div class="reply-ava">${(ru.nickname||'?')[0]}</div>
           <div class="cmt-body">
-            <div class="cmt-name">${ru.nickname}</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div class="cmt-name">${ru.nickname}</div>
+              ${isMyReply ? `<button onclick="deleteReply('${mid}','${cid}','${rid}')" style="background:none;border:none;color:var(--text3);font-size:14px;cursor:pointer;padding:0 4px;">🗑️</button>` : ''}
+            </div>
             <div class="cmt-text">${escHtml(r.text)}</div>
             <div class="cmt-time">${rds}</div>
             ${rrxBar}
