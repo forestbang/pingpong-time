@@ -1403,20 +1403,27 @@ async function loadUserAndBoot(token) {
 }
 
 function handleKakaoUser(res) {
-  const id       = String(res.id);
-  const nickname = res.kakao_account?.profile?.nickname || '탁구인';
-  const img      = res.kakao_account?.profile?.profile_image_url || '';
-  ME = { id, nickname, img };
+  const id        = String(res.id);
+  const kakaoNick = res.kakao_account?.profile?.nickname || '탁구인';
+  const img       = res.kakao_account?.profile?.profile_image_url || '';
+  ME = { id, nickname: kakaoNick, img };
 
   const ref = db.ref('pingpong/users/' + id);
   ref.once('value', snap => {
     const prev = snap.val();
     if (!prev) {
-      ref.set({ nickname, img, level: '중급', joinedAt: Date.now() });
-      ME.level = '중급';
+      // 첫 로그인: 카카오 닉네임으로 등록
+      ref.set({ nickname: kakaoNick, img, level: '', joinedAt: Date.now() });
+      ME.level = '';
     } else {
-      ref.update({ nickname, img });
-      ME.level = prev.level || '중급';
+      // 재로그인: 프로필 사진만 업데이트, 닉네임은 앱에서 설정한 것 유지
+      ME.nickname = prev.nickname || kakaoNick;
+      ME.level    = prev.level    || '';
+      ME.grip     = prev.grip     || '';
+      ME.rubber   = prev.rubber   || '';
+      ME.gender   = prev.gender   || '';
+      ME.birthYear= prev.birthYear|| '';
+      ref.update({ img }); // 사진만 업데이트
     }
     bootApp();
   });
