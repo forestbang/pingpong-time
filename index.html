@@ -910,6 +910,53 @@
       color: var(--text2); font-size: 14px; font-family: inherit;
       cursor: pointer;
     }
+    /* ───── USER PROFILE POPUP ───── */
+    .user-popup-bg {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 350; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .user-popup-bg.open { display: flex; }
+    .user-popup {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 20px;
+      width: 100%; max-width: 320px;
+      text-align: center;
+    }
+    .user-popup-ava {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: var(--accent); color: #000;
+      font-size: 28px; font-weight: 900;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 12px; border: 3px solid var(--accent);
+    }
+    .user-popup-ava img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; }
+    .user-popup-name { font-size: 20px; font-weight: 900; margin-bottom: 12px; }
+    .user-popup-tags { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 16px; }
+    .user-popup-tag {
+      font-size: 12px; font-weight: 700;
+      padding: 4px 12px; border-radius: 20px;
+      background: rgba(200,255,0,0.1);
+      border: 1px solid rgba(200,255,0,0.3);
+      color: var(--accent);
+    }
+    .user-popup-stats { display: flex; gap: 8px; margin-bottom: 16px; }
+    .user-popup-stat {
+      flex: 1; background: var(--bg3);
+      border-radius: var(--radius-sm); padding: 10px 6px;
+    }
+    .user-popup-stat .num { font-size: 20px; font-weight: 900; color: var(--accent); }
+    .user-popup-stat .lbl { font-size: 10px; color: var(--text2); margin-top: 2px; }
+    .user-popup-close {
+      width: 100%; padding: 12px;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text2);
+      font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer;
+    }
+
     .admin-badge {
       display: none; font-size: 10px; font-weight: 900;
       background: var(--red); color: #fff;
@@ -1168,6 +1215,11 @@
       <span class="icon">👤</span><span>내정보</span>
     </button>
   </nav>
+</div>
+
+<!-- ═══ USER PROFILE POPUP ═══ -->
+<div class="user-popup-bg" id="userPopupBg" onclick="if(event.target===this)closeUserPopup()">
+  <div class="user-popup" id="userPopup"></div>
 </div>
 
 <!-- ═══ PIN MODAL ═══ -->
@@ -1591,11 +1643,12 @@ function openDetail(mid) {
     ? `<div style="text-align:center;color:var(--text2);font-size:14px;padding:14px 0;">아직 참석자가 없어요</div>`
     : attendees.map(uid => {
         const u = users[uid] || { nickname: '탁구인' };
+        const isCreator = uid === m.createdBy;
         return `
-          <div class="attendee-row">
+          <div class="attendee-row" onclick="openUserPopup('${uid}')" style="cursor:pointer;">
             <div class="att-ava">${(u.nickname||'?')[0]}</div>
-            <div class="att-name">${u.nickname || '탁구인'}</div>
-            ${u.level ? `<span class="lvl-chip lvl-${u.level}">${u.level}</span>` : ''}
+            <div class="att-name">${u.nickname || '탁구인'}${isCreator ? ' 👑' : ''}</div>
+            ${u.level ? `<span class="lvl-chip lvl-${u.level.includes('부')?'중급':u.level}">${u.level}</span>` : ''}
           </div>`;
       }).join('');
 
@@ -1621,6 +1674,47 @@ function openDetail(mid) {
 
   listenComments(m.id);
   document.getElementById('modal').classList.add('open');
+}
+
+function openUserPopup(uid) {
+  const u = users[uid] || { nickname: '탁구인' };
+  const attendCount = Object.values(meetings).filter(m => m.attendees && m.attendees[uid]).length;
+  const madeCount   = Object.values(meetings).filter(m => m.createdBy === uid).length;
+
+  const avaHTML = u.img
+    ? `<div class="user-popup-ava"><img src="${u.img}"></div>`
+    : `<div class="user-popup-ava">${(u.nickname||'?')[0]}</div>`;
+
+  const tagItems = [
+    u.gender, u.birthYear ? u.birthYear+'년생' : '',
+    u.grip, u.rubber, u.level
+  ].filter(Boolean);
+
+  const tags = tagItems.length
+    ? tagItems.map(t => `<span class="user-popup-tag">${t}</span>`).join('')
+    : '<span style="color:var(--text3);font-size:13px;">정보 없음</span>';
+
+  document.getElementById('userPopup').innerHTML = `
+    ${avaHTML}
+    <div class="user-popup-name">${u.nickname || '탁구인'}</div>
+    <div class="user-popup-tags">${tags}</div>
+    <div class="user-popup-stats">
+      <div class="user-popup-stat">
+        <div class="num">${attendCount}</div>
+        <div class="lbl">참석 모임</div>
+      </div>
+      <div class="user-popup-stat">
+        <div class="num">${madeCount}</div>
+        <div class="lbl">만든 모임</div>
+      </div>
+    </div>
+    <button class="user-popup-close" onclick="closeUserPopup()">닫기</button>`;
+
+  document.getElementById('userPopupBg').classList.add('open');
+}
+
+function closeUserPopup() {
+  document.getElementById('userPopupBg').classList.remove('open');
 }
 
 function closeModal() { document.getElementById('modal').classList.remove('open'); }
@@ -1707,7 +1801,7 @@ function renderMembers() {
 
   wrap.innerHTML = `<div class="section-label">멤버 ${list.length}명</div>`
     + list.map(([uid, u]) => `
-      <div class="member-card">
+      <div class="member-card" onclick="openUserPopup('${uid}')" style="cursor:pointer;">
         ${u.img
           ? `<img class="member-ava" src="${u.img}">`
           : `<div class="member-ava-text">${(u.nickname||'?')[0]}</div>`}
