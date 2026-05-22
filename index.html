@@ -2315,6 +2315,7 @@ function listenGlobalChat() {
 
       const isReply = m.text.startsWith('@');
       const replyIndent = isReply ? (isMe ? 'padding-right:32px;' : 'padding-left:32px;') : '';
+      const delBtn = isMe ? `<button onclick="deleteChatMsg('${id}')" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;margin-top:2px;" title="삭제">🗑️ 삭제</button>` : '';
 
       html += `
         <div class="chat-bubble-wrap ${isMe?'me':''}" style="${replyIndent}">
@@ -2326,6 +2327,7 @@ function listenGlobalChat() {
             ${rxBar}
             <div class="chat-reply-bar">
               <button class="reply-trigger" onclick="chatReply('${escHtml(u.nickname)}')">↩ 답글</button>
+              ${delBtn}
             </div>
           </div>
           ${isMe?avaHTML:''}
@@ -2334,6 +2336,16 @@ function listenGlobalChat() {
     el.innerHTML = html;
     el.scrollTop = el.scrollHeight;
   });
+}
+
+function deleteChatMsg(id) {
+  if (!confirm('이 메시지를 삭제할까요?')) return;
+  db.ref(`pingpong/chat/${id}`).remove().then(() => toast('메시지를 삭제했어요'));
+}
+
+function deleteComment(mid, cid) {
+  if (!confirm('이 댓글을 삭제할까요?')) return;
+  db.ref(`pingpong/meetings/${mid}/comments/${cid}`).remove().then(() => toast('댓글을 삭제했어요'));
 }
 
 function chatReply(name) {
@@ -2406,10 +2418,15 @@ function listenComments(mid) {
         </div>`;
       }).join('');
 
+      const isMyComment = ME && c.uid === ME.id;
+
       return `<div class="comment-item">
         <div class="cmt-ava">${(u.nickname||'?')[0]}</div>
         <div class="cmt-body">
-          <div class="cmt-name">${u.nickname}</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div class="cmt-name">${u.nickname}</div>
+            ${isMyComment ? `<button onclick="deleteComment('${mid}','${cid}')" style="background:none;border:none;color:var(--text3);font-size:14px;cursor:pointer;padding:0 4px;" title="삭제">🗑️</button>` : ''}
+          </div>
           <div class="cmt-text">${escHtml(c.text)}</div>
           <div class="cmt-time">${ds}</div>
           ${rxBar}
