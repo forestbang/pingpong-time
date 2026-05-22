@@ -1106,7 +1106,6 @@
       <div style="display:flex;gap:8px;align-items:center;">
         <select class="form-select" id="birthYearInput" style="flex:1;">
           <option value="">출생년도 선택</option>
-          ${Array.from({length:60},(_,i)=>2005-i).map(y=>`<option value="${y}">${y}년생</option>`).join('')}
         </select>
         <button onclick="saveBirthYear()" style="padding:13px 18px;background:var(--accent);color:#000;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;flex-shrink:0;">저장</button>
       </div>
@@ -1398,6 +1397,16 @@ function bootApp() {
     renderMembers();
   });
   listenNotice();
+
+  // 출생년도 드롭다운 생성
+  const bySelect = document.getElementById('birthYearInput');
+  if (bySelect) {
+    for (let y = 2010; y >= 1945; y--) {
+      const opt = document.createElement('option');
+      opt.value = y; opt.textContent = y + '년생';
+      bySelect.appendChild(opt);
+    }
+  }
 }
 
 // 페이지 로드 시 자동 처리
